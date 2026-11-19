@@ -24,6 +24,11 @@ class TransportError(RuntimeError):
         self.status = status
 
 
+class PostedDocumentError(TransportError):
+    def __init__(self):
+        super().__init__("Расширение 1С запретило операцию с проведённым документом (HTTP 422).", 422)
+
+
 def _read_integer(literal):
     if len(literal.lstrip("-")) > 16:
         return literal
@@ -191,6 +196,7 @@ class Transport:
                 raise ValueError("Размер запроса превышает 4 МиБ.")
             request_headers["Content-Type"] = "application/json; charset=utf-8"
         uncertainty = UNKNOWN_WRITE if method != "GET" else ""
+        status = None
         try:
             async with asyncio.timeout(self.timeout):
                 # A fresh client guarantees that cookies cannot migrate between requests. No retries.
@@ -202,6 +208,13 @@ class Transport:
                     ) as response:
                         status = response.status_code
                         if not 200 <= status <= 299:
+                            if status == 422 and method == "POST" and path == "change":
+                                try:
+                                    error = json.loads(await _read_bytes(response, 1024, ""))
+                                except (ValueError, RecursionError, TransportError):
+                                    error = None
+                                if isinstance(error, dict) and error.get("error") == "posted_document":
+                                    raise PostedDocumentError()
                             detail = {
                                 401: "Проверьте авторизацию.",
                                 403: "Недостаточно прав.",
@@ -217,6 +230,8 @@ class Transport:
                         raw = await _read_bytes(response, limit, uncertainty)
                         reply_headers = response.headers
         except (httpx.HTTPError, TimeoutError, OSError):
+            if status == 422:
+                raise TransportError("1С отклонила запрос (HTTP 422).", 422) from None
             raise TransportError("Сетевая ошибка или таймаут при обращении к 1С." + uncertainty) from None
         try:
             text = raw.decode("utf-8-sig")

@@ -1,0 +1,435 @@
+[
+  {
+    "route": "direct",
+    "operation": "update",
+    "outcome": "denied",
+    "code": 422,
+    "before": {
+      "id": "73c3ce7e-e467-11f1-8aa8-04f0ee43ed0a",
+      "date": "2026-11-20T03:22:14",
+      "number": "00000000024",
+      "posted": true,
+      "mark": false,
+      "sum": 10,
+      "version": "AAAAJgAAAAA=",
+      "count": 2,
+      "movement": 4,
+      "active": true,
+      "records": [
+        {
+          "recorder": "73c3ce7e-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:22:14",
+          "line": 1,
+          "amount": 4,
+          "active": true
+        },
+        {
+          "recorder": "73c3ce7e-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:23:14",
+          "line": 2,
+          "amount": 6,
+          "active": true
+        }
+      ]
+    },
+    "after": {
+      "id": "73c3ce7e-e467-11f1-8aa8-04f0ee43ed0a",
+      "date": "2026-11-20T03:22:14",
+      "number": "00000000024",
+      "posted": true,
+      "mark": false,
+      "sum": 10,
+      "version": "AAAAJgAAAAA=",
+      "count": 2,
+      "movement": 4,
+      "active": true,
+      "records": [
+        {
+          "recorder": "73c3ce7e-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:22:14",
+          "line": 1,
+          "amount": 4,
+          "active": true
+        },
+        {
+          "recorder": "73c3ce7e-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:23:14",
+          "line": 2,
+          "amount": 6,
+          "active": true
+        }
+      ]
+    }
+  },
+  {
+    "route": "direct",
+    "operation": "mark",
+    "outcome": "denied",
+    "code": 422,
+    "before": {
+      "id": "73c3ce7f-e467-11f1-8aa8-04f0ee43ed0a",
+      "date": "2026-11-20T03:22:14",
+      "number": "00000000025",
+      "posted": true,
+      "mark": false,
+      "sum": 10,
+      "version": "AAAAJwAAAAA=",
+      "count": 2,
+      "movement": 4,
+      "active": true,
+      "records": [
+        {
+          "recorder": "73c3ce7f-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:22:14",
+          "line": 1,
+          "amount": 4,
+          "active": true
+        },
+        {
+          "recorder": "73c3ce7f-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:23:14",
+          "line": 2,
+          "amount": 6,
+          "active": true
+        }
+      ]
+    },
+    "after": {
+      "id": "73c3ce7f-e467-11f1-8aa8-04f0ee43ed0a",
+      "date": "2026-11-20T03:22:14",
+      "number": "00000000025",
+      "posted": true,
+      "mark": false,
+      "sum": 10,
+      "version": "AAAAJwAAAAA=",
+      "count": 2,
+      "movement": 4,
+      "active": true,
+      "records": [
+        {
+          "recorder": "73c3ce7f-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:22:14",
+          "line": 1,
+          "amount": 4,
+          "active": true
+        },
+        {
+          "recorder": "73c3ce7f-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:23:14",
+          "line": 2,
+          "amount": 6,
+          "active": true
+        }
+      ]
+    }
+  },
+  {
+    "route": "direct",
+    "operation": "delete",
+    "outcome": "denied",
+    "code": 422,
+    "before": {
+      "id": "73c3ce80-e467-11f1-8aa8-04f0ee43ed0a",
+      "date": "2026-11-20T03:22:15",
+      "number": "00000000026",
+      "posted": true,
+      "mark": false,
+      "sum": 10,
+      "version": "AAAAKAAAAAA=",
+      "count": 2,
+      "movement": 4,
+      "active": true,
+      "records": [
+        {
+          "recorder": "73c3ce80-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:22:15",
+          "line": 1,
+          "amount": 4,
+          "active": true
+        },
+        {
+          "recorder": "73c3ce80-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:23:15",
+          "line": 2,
+          "amount": 6,
+          "active": true
+        }
+      ]
+    },
+    "after": {
+      "id": "73c3ce80-e467-11f1-8aa8-04f0ee43ed0a",
+      "date": "2026-11-20T03:22:15",
+      "number": "00000000026",
+      "posted": true,
+      "mark": false,
+      "sum": 10,
+      "version": "AAAAKAAAAAA=",
+      "count": 2,
+      "movement": 4,
+      "active": true,
+      "records": [
+        {
+          "recorder": "73c3ce80-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:22:15",
+          "line": 1,
+          "amount": 4,
+          "active": true
+        },
+        {
+          "recorder": "73c3ce80-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:23:15",
+          "line": 2,
+          "amount": 6,
+          "active": true
+        }
+      ]
+    }
+  },
+  {
+    "route": "mcp",
+    "operation": "update",
+    "outcome": "denied",
+    "code": 422,
+    "before": {
+      "id": "73c3ce81-e467-11f1-8aa8-04f0ee43ed0a",
+      "date": "2026-11-20T03:22:15",
+      "number": "00000000027",
+      "posted": true,
+      "mark": false,
+      "sum": 10,
+      "version": "AAAAKQAAAAA=",
+      "count": 2,
+      "movement": 4,
+      "active": true,
+      "records": [
+        {
+          "recorder": "73c3ce81-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:22:15",
+          "line": 1,
+          "amount": 4,
+          "active": true
+        },
+        {
+          "recorder": "73c3ce81-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:23:15",
+          "line": 2,
+          "amount": 6,
+          "active": true
+        }
+      ]
+    },
+    "after": {
+      "id": "73c3ce81-e467-11f1-8aa8-04f0ee43ed0a",
+      "date": "2026-11-20T03:22:15",
+      "number": "00000000027",
+      "posted": true,
+      "mark": false,
+      "sum": 10,
+      "version": "AAAAKQAAAAA=",
+      "count": 2,
+      "movement": 4,
+      "active": true,
+      "records": [
+        {
+          "recorder": "73c3ce81-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:22:15",
+          "line": 1,
+          "amount": 4,
+          "active": true
+        },
+        {
+          "recorder": "73c3ce81-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:23:15",
+          "line": 2,
+          "amount": 6,
+          "active": true
+        }
+      ]
+    }
+  },
+  {
+    "route": "mcp",
+    "operation": "mark",
+    "outcome": "denied",
+    "code": 422,
+    "before": {
+      "id": "73c3ce82-e467-11f1-8aa8-04f0ee43ed0a",
+      "date": "2026-11-20T03:22:15",
+      "number": "00000000028",
+      "posted": true,
+      "mark": false,
+      "sum": 10,
+      "version": "AAAAKgAAAAA=",
+      "count": 2,
+      "movement": 4,
+      "active": true,
+      "records": [
+        {
+          "recorder": "73c3ce82-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:22:15",
+          "line": 1,
+          "amount": 4,
+          "active": true
+        },
+        {
+          "recorder": "73c3ce82-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:23:15",
+          "line": 2,
+          "amount": 6,
+          "active": true
+        }
+      ]
+    },
+    "after": {
+      "id": "73c3ce82-e467-11f1-8aa8-04f0ee43ed0a",
+      "date": "2026-11-20T03:22:15",
+      "number": "00000000028",
+      "posted": true,
+      "mark": false,
+      "sum": 10,
+      "version": "AAAAKgAAAAA=",
+      "count": 2,
+      "movement": 4,
+      "active": true,
+      "records": [
+        {
+          "recorder": "73c3ce82-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:22:15",
+          "line": 1,
+          "amount": 4,
+          "active": true
+        },
+        {
+          "recorder": "73c3ce82-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:23:15",
+          "line": 2,
+          "amount": 6,
+          "active": true
+        }
+      ]
+    }
+  },
+  {
+    "route": "mcp",
+    "operation": "delete",
+    "outcome": "denied",
+    "code": 422,
+    "before": {
+      "id": "73c3ce83-e467-11f1-8aa8-04f0ee43ed0a",
+      "date": "2026-11-20T03:22:15",
+      "number": "00000000029",
+      "posted": true,
+      "mark": false,
+      "sum": 10,
+      "version": "AAAAKwAAAAA=",
+      "count": 2,
+      "movement": 4,
+      "active": true,
+      "records": [
+        {
+          "recorder": "73c3ce83-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:22:15",
+          "line": 1,
+          "amount": 4,
+          "active": true
+        },
+        {
+          "recorder": "73c3ce83-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:23:15",
+          "line": 2,
+          "amount": 6,
+          "active": true
+        }
+      ]
+    },
+    "after": {
+      "id": "73c3ce83-e467-11f1-8aa8-04f0ee43ed0a",
+      "date": "2026-11-20T03:22:15",
+      "number": "00000000029",
+      "posted": true,
+      "mark": false,
+      "sum": 10,
+      "version": "AAAAKwAAAAA=",
+      "count": 2,
+      "movement": 4,
+      "active": true,
+      "records": [
+        {
+          "recorder": "73c3ce83-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:22:15",
+          "line": 1,
+          "amount": 4,
+          "active": true
+        },
+        {
+          "recorder": "73c3ce83-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T03:23:15",
+          "line": 2,
+          "amount": 6,
+          "active": true
+        }
+      ]
+    }
+  },
+  {
+    "route": "draft_ticket",
+    "operation": "update",
+    "outcome": "denied_after_post",
+    "before": {
+      "id": "73c3ce87-e467-11f1-8aa8-04f0ee43ed0a",
+      "date": "2026-11-20T14:00:00",
+      "number": "00000000030",
+      "posted": true,
+      "mark": false,
+      "sum": 10,
+      "version": "AAAAMQAAAAA=",
+      "count": 2,
+      "movement": 4,
+      "active": true,
+      "records": [
+        {
+          "recorder": "73c3ce87-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T14:00:00",
+          "line": 1,
+          "amount": 4,
+          "active": true
+        },
+        {
+          "recorder": "73c3ce87-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T14:01:00",
+          "line": 2,
+          "amount": 6,
+          "active": true
+        }
+      ]
+    },
+    "after": {
+      "id": "73c3ce87-e467-11f1-8aa8-04f0ee43ed0a",
+      "date": "2026-11-20T14:00:00",
+      "number": "00000000030",
+      "posted": true,
+      "mark": false,
+      "sum": 10,
+      "version": "AAAAMQAAAAA=",
+      "count": 2,
+      "movement": 4,
+      "active": true,
+      "records": [
+        {
+          "recorder": "73c3ce87-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T14:00:00",
+          "line": 1,
+          "amount": 4,
+          "active": true
+        },
+        {
+          "recorder": "73c3ce87-e467-11f1-8aa8-04f0ee43ed0a",
+          "period": "2026-11-20T14:01:00",
+          "line": 2,
+          "amount": 6,
+          "active": true
+        }
+      ]
+    }
+  }
+]

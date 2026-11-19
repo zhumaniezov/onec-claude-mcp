@@ -417,6 +417,16 @@ def _fields(model, entity, data, *, sections=False, odata_annotations=False, dep
     return encoded
 
 
+class PostedDocumentGuardUnavailable(ValueError):
+    """The extension cannot enforce the document policy. No change has been sent."""
+
+    def __init__(self):
+        super().__init__(
+            "Для изменений документов обновите расширение OneCMCP до версии с защитой "
+            "проведённых документов (1.2.1 или новее)."
+        )
+
+
 class ODataClient:
     def __init__(self, profile, transport, extension_transport=None):
         self.profile = profile
@@ -643,7 +653,7 @@ class ODataClient:
             preview["id"] = id
         return body, preview
 
-    async def _check_atomic_service(self):
+    async def _check_atomic_service(self, collection):
         _require(
             self.extension is not None,
             "Для изменения существующего объекта требуется расширение с атомарной записью.",
@@ -657,11 +667,13 @@ class ODataClient:
             and caps.get("atomicWrites") is True,
             "Расширение не поддерживает атомарную запись. Проверьте публикацию и версию расширения.",
         )
+        if collection.startswith("Document_") and caps.get("protectsPostedDocuments") is not True:
+            raise PostedDocumentGuardUnavailable()
 
     async def validate_write(self, method, **args):
         _, preview = await self._prepare(method, **args)
         if method != "create":
-            await self._check_atomic_service()
+            await self._check_atomic_service(args["collection"])
         return preview
 
     async def _mutate(self, operation, **args):
@@ -685,7 +697,7 @@ class ODataClient:
                 except ValueError:
                     etag = None
             return {"status": response["status"], "id": key, "etag": etag}
-        await self._check_atomic_service()
+        await self._check_atomic_service(name)
         wire = {
             "operation": {
                 "update": "update",

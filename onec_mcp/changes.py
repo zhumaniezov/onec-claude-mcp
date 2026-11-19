@@ -9,6 +9,8 @@ from time import monotonic
 from uuid import uuid4
 
 from .audit import AuditError
+from .odata import PostedDocumentGuardUnavailable
+from .transport import PostedDocumentError
 
 _METHODS = {"create": "create", "update": "update", "mark": "markDeletion", "delete": "remove"}
 _IDENTITY_FIELDS = ("Ref_Key", "Code", "Description", "Number", "Date", "Posted", "DeletionMark")
@@ -275,7 +277,9 @@ class ChangePlans:
             object_id = object_id or result.get("id")
         except (asyncio.CancelledError, Exception) as error:
             status = getattr(error, "status", None)
-            if status in (409, 412):
+            if isinstance(error, (PostedDocumentError, PostedDocumentGuardUnavailable)):
+                outcome, note = "rejected", str(error)
+            elif status in (409, 412):
                 outcome, note = "conflict", "Конфликт версии или блокировки объекта в 1С."
             elif dispatched:
                 if status in (400, 401, 403, 404, 405, 413, 415, 422):

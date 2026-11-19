@@ -8,7 +8,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
 
 from onec_mcp.odata import ODataClient
-from onec_mcp.transport import Transport, TransportError
+from onec_mcp.transport import PostedDocumentError, Transport, TransportError
 
 CAT = "Catalog_Товары"
 REG = "InformationRegister_Цены"
@@ -91,6 +91,35 @@ class TestOData(unittest.IsolatedAsyncioTestCase):
         self.server.shutdown()
         self.server.server_close()
         self.thread.join()
+
+    async def test_old_extension_cannot_receive_document_changes(self):
+        document = "Document_Заказ"
+        self.xml = XML.replace(CAT, document)
+        self.profile["writeCollections"] = [document]
+        for operation, extra in (
+            ("update", {"data": {"Description": "new"}}),
+            ("markDeletion", {}),
+            ("remove", {"confirmId": ID}),
+        ):
+            args = {"collection": document, "id": ID, "etag": VERSION, **extra}
+            with self.assertRaisesRegex(ValueError, "1.2.1"):
+                await self.client.validate_write(operation, **args)
+            with self.assertRaisesRegex(ValueError, "1.2.1"):
+                await getattr(self.client, operation)(**args)
+        self.assertFalse(any(method == "POST" for method, *_ in self.calls))
+
+    async def test_only_recognized_cfe_rejection_exposes_a_localized_reason(self):
+        self.reply = 422, b'{"error":"posted_document","message":"secret-sentinel"}', {}
+        with self.assertRaisesRegex(PostedDocumentError, "проведённым") as refused:
+            await self.extension.request("change", method="POST", body={})
+        self.assertNotIn("secret-sentinel", str(refused.exception))
+        for payload in (b'{"error":"secret-sentinel"}', b"not json", b"x" * 2048):
+            self.reply = 422, payload, {}
+            with self.assertRaises(TransportError) as generic:
+                await self.extension.request("change", method="POST", body={})
+            self.assertNotIsInstance(generic.exception, PostedDocumentError)
+            self.assertEqual(generic.exception.status, 422)
+            self.assertNotIn("secret-sentinel", str(generic.exception))
 
     async def test_metadata_across_types_is_cached_and_finds_fields_in_row_types(self):
         catalog, register = await asyncio.gather(

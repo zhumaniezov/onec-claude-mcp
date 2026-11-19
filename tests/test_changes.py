@@ -9,7 +9,8 @@ from unittest.mock import patch
 
 from onec_mcp.audit import AuditError, AuditLog
 from onec_mcp.changes import ChangePlans
-from onec_mcp.transport import TransportError
+from onec_mcp.odata import PostedDocumentGuardUnavailable
+from onec_mcp.transport import PostedDocumentError, TransportError
 
 ID = "aaaaaaaa-1111-4111-8111-111111111111"
 COLLECTION = "Catalog_Demo"
@@ -298,6 +299,31 @@ class ChangeTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(self.journal()[-1]["outcome"], outcome)
             self.assertEqual(self.journal()[-1]["http_status"], status)
         self.assertNotIn(b"secret-sentinel", self.audit_path.read_bytes())
+
+    async def test_posted_document_rejection_is_reported_and_audited(self):
+        async def reject(**args):
+            raise PostedDocumentError()
+
+        self.client.update = reject
+        plan = await self.prepare()
+        with self.assertRaisesRegex(ValueError, "проведённым документом") as caught:
+            await self.apply(plan)
+        self.assertIn(plan["operationId"], str(caught.exception))
+        row = self.journal()[0]
+        self.assertEqual((row["outcome"], row["http_status"]), ("rejected", 422))
+        with self.assertRaisesRegex(ValueError, "уже использован"):
+            await self.apply(plan)
+
+    async def test_extension_downgrade_after_preview_is_a_local_rejection(self):
+        async def refuse_unprotected_endpoint(**args):
+            raise PostedDocumentGuardUnavailable()
+
+        plan = await self.prepare()
+        self.client.update = refuse_unprotected_endpoint
+        with self.assertRaisesRegex(ValueError, "обновите расширение"):
+            await self.apply(plan)
+        self.assertEqual(self.journal()[0]["outcome"], "rejected")
+        self.assertIsNone(self.journal()[0]["http_status"])
 
     async def test_cancelled_dispatched_write_leaves_unknown_outcome(self):
         plan = await self.prepare()
