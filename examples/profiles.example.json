@@ -1,0 +1,12 @@
+{
+  "bases": {
+    "demo": {
+      "label": "Демонстрационная база",
+      "publicationUrl": "https://onec.example.org/demo",
+      "usernameEnv": "ONEC_DEMO_USER",
+      "passwordEnv": "ONEC_DEMO_PASSWORD",
+      "writeCollections": [],
+      "physicalDelete": false
+    }
+  }
+}
