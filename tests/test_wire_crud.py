@@ -10,7 +10,6 @@ from urllib.parse import parse_qs, unquote, urlsplit
 from test_odata import CAT, ID, XML
 from test_server import connect
 
-
 SET_PATH = "/stand/odata/standard.odata/" + CAT
 INSTANCE_PATH = f"{SET_PATH}(guid'{ID}')"
 CFE = "/stand/hs/onec_mcp/v1/"
@@ -21,6 +20,8 @@ class Publication(ThreadingHTTPServer):
         super().__init__(("127.0.0.1", 0), Handler)
         self.row = None
         self.writes = []
+        self.external_edit_on_change = False
+        self.mutation_lock = threading.Lock()
 
     def write_record(self, method, fields):
         self.writes.append((method, fields.copy()))
@@ -63,7 +64,14 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/stand/odata/standard.odata/$metadata":
             return self.reply(200, XML)
         if path == CFE + "capabilities":
-            return self.reply(200, {"protocolVersion": 1, "dataTransport": "odata-v3"})
+            return self.reply(
+                200,
+                {
+                    "protocolVersion": 1,
+                    "dataTransport": "odata-v3",
+                    "atomicWrites": True,
+                },
+            )
         if path == CFE + "metadata":
             return self.reply(
                 200,
@@ -92,28 +100,40 @@ class Handler(BaseHTTPRequestHandler):
         self.reply(404)
 
     def do_POST(self):
+        if self.resource == CFE + "change":
+            with self.server.mutation_lock:
+                return self.apply_change(self.body())
         if self.resource != SET_PATH or self.server.row is not None:
             return self.reply(409)
         self.server.row = {"DeletionMark": False}
         self.server.write_record("POST", self.body())
         self.reply(201, self.server.row)
 
-    def do_PATCH(self):
-        if self.resource != INSTANCE_PATH or not self.server.row:
+    def apply_change(self, change):
+        if (
+            change.get("id") != ID
+            or change.get("collection") != CAT
+            or not self.server.row
+        ):
             return self.reply(404)
-        if self.headers.get("If-Match") != self.server.row["DataVersion"]:
+        if self.server.external_edit_on_change:
+            # Mimic an external commit between the Python preflight and 1C's transaction.
+            self.server.external_edit_on_change = False
+            self.server.row["DataVersion"] = base64.b64encode(
+                (99).to_bytes(8, "little")
+            ).decode("ascii")
+        if change.get("version") != self.server.row["DataVersion"]:
             return self.reply(412)
-        self.server.write_record("PATCH", self.body())
-        self.reply(204)
-
-    def do_DELETE(self):
-        if self.resource != INSTANCE_PATH or not self.server.row:
-            return self.reply(404)
-        if self.headers.get("If-Match") != self.server.row["DataVersion"]:
-            return self.reply(412)
-        self.server.writes.append(("DELETE", {}))
-        self.server.row = None
-        self.reply(204)
+        op = change.get("operation")
+        if op == "delete":
+            self.server.writes.append((op, {}))
+            self.server.row = None
+            return self.reply(200, {"id": ID, "version": None})
+        if op not in {"update", "mark"}:
+            return self.reply(400)
+        fields = change["data"] if op == "update" else {"DeletionMark": True}
+        self.server.write_record(op, fields)
+        self.reply(200, {"id": ID, "version": self.server.row["DataVersion"]})
 
 
 class WireCRUDTests(unittest.IsolatedAsyncioTestCase):
@@ -170,6 +190,20 @@ class WireCRUDTests(unittest.IsolatedAsyncioTestCase):
             original = await get()
             self.assertEqual(original["data"]["Description"], "Один")
 
+            stale = await prepare(
+                "update",
+                id=ID,
+                version=original["etag"],
+                data={"Description": "Конфликт"},
+            )
+            fixture.external_edit_on_change = True
+            refused = await client.call_tool(
+                "onec_apply_change", {"base": "stand", "ticket": stale["ticket"]}
+            )
+            self.assertTrue(refused.isError)
+            self.assertIn(stale["operationId"], refused.content[0].text)
+            original = await get()
+            self.assertEqual(original["data"]["Description"], "Один")
             update = await prepare(
                 "update", id=ID, version=original["etag"], data={"Description": "Два"}
             )
@@ -198,9 +232,9 @@ class WireCRUDTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual((await call("onec_list", collection=CAT))["data"], [])
         self.assertEqual(
             [method for method, _ in fixture.writes],
-            ["POST", "PATCH", "PATCH", "DELETE"],
+            ["POST", "update", "mark", "delete"],
         )
         self.assertEqual(
             fixture.writes[1:3],
-            [("PATCH", {"Description": "Два"}), ("PATCH", {"DeletionMark": True})],
+            [("update", {"Description": "Два"}), ("mark", {"DeletionMark": True})],
         )

@@ -1,11 +1,14 @@
 """Preview, bind and consume a single data change in the current MCP process."""
 
+import asyncio
 import copy
 import json
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from time import monotonic
 from uuid import uuid4
+
+from .audit import AuditError
 
 _METHODS = {"create": "create", "update": "update", "mark": "markDeletion", "delete": "remove"}
 _IDENTITY_FIELDS = ("Ref_Key", "Code", "Description", "Number", "Date", "Posted", "DeletionMark")
@@ -17,10 +20,15 @@ _MAX_PREVIEW = 96 * 1024
 
 @dataclass(slots=True)
 class _Pending:
+    operation_id: str
     base: str
-    method: str
+    action: str
     args: dict
     deadline: float
+
+    @property
+    def method(self):
+        return _METHODS[self.action]
 
 
 def _matches_submitted(actual, expected) -> bool:
@@ -42,18 +50,38 @@ def _matches_submitted(actual, expected) -> bool:
 
 async def _check_written(client, entry: _Pending, result: dict) -> dict:
     expected = {"DeletionMark": True} if entry.method == "markDeletion" else entry.args["data"]
-    actual = result.get("data")
-    if not isinstance(actual, dict) or not expected.keys() <= actual.keys():
-        key = entry.args.get("id") or (actual.get("Ref_Key") if isinstance(actual, dict) else None)
-        if not key:
-            return {"checked": False, "message": "Ответ 1С не содержит ключа для контрольного чтения."}
-        try:
-            read = await client.get(collection=entry.args["collection"], id=key, select=list(expected))
-            actual = read["data"]
-        except Exception as error:
-            return {"checked": False, "message": "Запись принята. Контрольное чтение: " + str(error)}
+    key = entry.args.get("id") or result.get("id")
+    if not key:
+        return {"checked": False, "message": "Ответ 1С не содержит ключа для контрольного чтения."}
+    try:
+        read = await client.get(collection=entry.args["collection"], id=key, select=list(expected))
+        actual = read["data"]
+    except Exception:  # noqa: BLE001 - verification failure cannot undo a committed write.
+        return {"checked": False, "message": "Запись принята. Контрольное чтение недоступно."}
     differences = [k for k, v in expected.items() if k not in actual or not _matches_submitted(actual[k], v)]
     return {"checked": True, "differences": differences}
+
+
+def _table_diff(before, after):
+    """1C replacement is positional. Report row positions, never infer an item identity."""
+    changed = []
+    for position, (old, new) in enumerate(zip(before, after), 1):
+        fields = []
+        for name in sorted(old.keys() | new.keys()):
+            if name not in new and name in {"LineNumber", "Ref_Key"}:
+                continue
+            if name not in old or name not in new or not _matches_submitted(old[name], new[name]):
+                fields.append(name)
+        if fields:
+            changed.append({"row": position, "fields": fields})
+    return {
+        "comparison": "position",
+        "beforeCount": len(before),
+        "afterCount": len(after),
+        "addedRows": list(range(len(before) + 1, len(after) + 1)),
+        "removedRows": list(range(len(after) + 1, len(before) + 1)),
+        "changedRows": changed,
+    }
 
 
 def _preview_size(plan: dict) -> int:
@@ -63,8 +91,9 @@ def _preview_size(plan: dict) -> int:
 
 
 class ChangePlans:
-    def __init__(self, resolve):
+    def __init__(self, resolve, audit):
         self.resolve = resolve
+        self.audit = audit
         self._entries: dict[str, _Pending] = {}
         self._active_objects: set[tuple[str, str, str]] = set()
 
@@ -162,9 +191,24 @@ class ChangePlans:
                 ),
             )
         else:
-            plan["effect"] = "Физическое удаление объекта через OData DELETE."
+            plan["effect"] = "Физическое удаление объекта в транзакции 1С."
         if replaceTableSections is True:
             plan["tableSections"] = "Передаваемые табличные части будут заменены целиком."
+        if has_fields:
+            table_diffs = {}
+            for field, submitted in data.items():
+                if isinstance(submitted, list):
+                    old = plan.get("before", {}).get(field, [])
+                    if not isinstance(old, list) or not all(
+                        isinstance(row, dict) for rows in (old, submitted) for row in rows
+                    ):
+                        raise ValueError("Невозможно сравнить строки табличной части.")
+                    table_diffs[field] = _table_diff(old, submitted)
+            if table_diffs:
+                plan["tableDiff"] = table_diffs
+        # Explicit null conveys an object that does not exist before/after the operation.
+        plan.setdefault("before", None)
+        plan.setdefault("after", None)
         if _preview_size(plan) > _MAX_PREVIEW:
             raise ValueError("Предпросмотр больше 96 КиБ. Сократите состав изменения.")
 
@@ -173,10 +217,12 @@ class ChangePlans:
         if len(self._entries) >= _MAX_PENDING:
             raise ValueError("Достигнут лимит ожидающих планов. Срок действия плана — 5 минут.")
         ticket = str(uuid4())
-        self._entries[ticket] = _Pending(base, method, copy.deepcopy(args), now + _TTL)
-        expires = datetime.now(timezone.utc) + timedelta(seconds=_TTL)
+        operation_id = str(uuid4())
+        self._entries[ticket] = _Pending(operation_id, base, operation, copy.deepcopy(args), now + _TTL)
+        expires = datetime.now(UTC) + timedelta(seconds=_TTL)
         return {
             **plan,
+            "operationId": operation_id,
             "ticket": ticket,
             "expiresAt": expires.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
         }
@@ -188,35 +234,82 @@ class ChangePlans:
             raise ValueError("План не найден, уже использован или истёк.")
         if entry.base != base:
             raise ValueError("План создан для другой базы.")
-        # Consume the ticket and reserve the object before yielding control to another MCP call.
+        # Consume before the first yield, including on local audit failure or cancellation.
         del self._entries[ticket]
-        client = self.resolve(base).client
+        session = self.resolve(base)
+        client = session.client
         args = entry.args
         collection, object_id = args["collection"], args.get("id")
-        key = (base, collection, object_id.lower()) if object_id else None
-        if key is not None:
-            if key in self._active_objects:
-                raise ValueError("Идёт изменение этого объекта. Перечитайте его и подготовьте новый план.")
-            self._active_objects.add(key)
+        operation_id = entry.operation_id
         try:
+            self.audit.start(
+                operation_id, base, entry.action, collection, object_id, getattr(session, "audit_user", None)
+            )
+        except AuditError:
+            raise ValueError(
+                f"Операция {operation_id}: журнал недоступен. Запись в 1С не отправлена."
+            ) from None
+
+        key = (base, collection, object_id.lower()) if object_id else None
+        reserved = False
+        dispatched = False
+        outcome = "rejected"
+        status = None
+        note = "Проверка перед записью не пройдена."
+        try:
+            if key is not None:
+                if key in self._active_objects:
+                    outcome, note = "conflict", "Идёт изменение этого объекта."
+                    raise ValueError
+                self._active_objects.add(key)
+                reserved = True
             if object_id:
                 current = await client.get(collection=collection, id=object_id, select=["DataVersion"])
                 if current.get("etag") != args["etag"]:
-                    raise ValueError("Версия объекта изменилась после предпросмотра. Запись остановлена.")
+                    outcome, note = "conflict", "Версия объекта изменилась после предпросмотра."
+                    raise ValueError
+            dispatched = True
             result = await getattr(client, entry.method)(**args)
-            output = {"base": base, "collection": collection, "result": result}
-            row = result.get("data")
-            if object_id:
-                output["id"] = object_id
-            elif isinstance(row, dict) and "Ref_Key" in row:
-                output["id"] = row["Ref_Key"]
-            if entry.method != "remove":
-                output["verification"] = await _check_written(client, entry, result)
-            return output
-        except Exception as error:
-            raise ValueError(
-                str(error) + " План закрыт. Перед повторной операцией проверьте состояние объекта в 1С."
-            ) from error
+            outcome = "committed"
+            status = result["status"]
+            object_id = object_id or result.get("id")
+        except (asyncio.CancelledError, Exception) as error:
+            status = getattr(error, "status", None)
+            if status in (409, 412):
+                outcome, note = "conflict", "Конфликт версии или блокировки объекта в 1С."
+            elif dispatched:
+                if status in (400, 401, 403, 404, 405, 413, 415, 422):
+                    outcome, note = "rejected", f"1С отклонила запись (HTTP {status})."
+                else:
+                    outcome, note = (
+                        "unknown",
+                        "Результат записи неизвестен. Проверьте состояние объекта в 1С.",
+                    )
+            if isinstance(error, asyncio.CancelledError):
+                raise
+            raise ValueError(f"Операция {operation_id}: {note} План закрыт.") from None
         finally:
-            if key is not None:
+            if reserved:
                 self._active_objects.discard(key)
+            try:
+                self.audit.finish(operation_id, outcome, object_id=object_id, status=status)
+            except AuditError:
+                # The durable 'started' row intentionally remains indeterminate.
+                if outcome == "committed":
+                    note = "1С приняла запись, но результат не удалось сохранить в журнале."
+                elif dispatched:
+                    note = "Результат не удалось сохранить в журнале. Проверьте состояние объекта в 1С."
+                else:
+                    note = "Запись в 1С не отправлена, результат не удалось сохранить в журнале."
+                raise ValueError(f"Операция {operation_id}: {note} План закрыт.") from None
+        output = {
+            "operationId": operation_id,
+            "base": base,
+            "collection": collection,
+            "result": {"status": status, "etag": result.get("etag")},
+        }
+        if object_id:
+            output["id"] = object_id
+        if entry.method != "remove":
+            output["verification"] = await _check_written(client, entry, result)
+        return output

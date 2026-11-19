@@ -8,3 +8,7 @@ dist/
 .ruff_cache/
 profiles.json
 .env
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm

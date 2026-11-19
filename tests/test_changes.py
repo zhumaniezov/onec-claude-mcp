@@ -1,10 +1,15 @@
 import asyncio
 import copy
+import sqlite3
+import tempfile
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from onec_mcp.audit import AuditError, AuditLog
 from onec_mcp.changes import ChangePlans
+from onec_mcp.transport import TransportError
 
 ID = "aaaaaaaa-1111-4111-8111-111111111111"
 COLLECTION = "Catalog_Demo"
@@ -57,8 +62,21 @@ class ChangeTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.client = Client()
         self.profile = {"writeCollections": [COLLECTION], "physicalDelete": False}
-        self.session = SimpleNamespace(profile=self.profile, client=self.client, field_limits=None)
-        self.plans = ChangePlans(lambda base: self.session)
+        self.session = SimpleNamespace(
+            profile=self.profile, client=self.client, field_limits=None, audit_user="integration"
+        )
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.audit_path = Path(self.directory.name) / "audit.sqlite3"
+        self.plans = ChangePlans(lambda base: self.session, AuditLog(self.audit_path))
+
+    def journal(self):
+        db = sqlite3.connect(self.audit_path)
+        try:
+            db.row_factory = sqlite3.Row
+            return [dict(row) for row in db.execute("SELECT * FROM operations ORDER BY rowid")]
+        finally:
+            db.close()
 
     async def prepare(self, **kwargs):
         return await self.plans.prepare(**(copy.deepcopy(REQUEST) | kwargs))
@@ -79,6 +97,17 @@ class ChangeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.client.writes[0]["data"], {"Description": "Новое"})
         self.assertEqual(result["verification"], {"checked": True, "differences": []})
         self.assertEqual(result["id"], ID)
+        self.assertEqual(result["operationId"], plan["operationId"])
+        self.assertNotEqual(plan["operationId"], plan["ticket"])
+        record = self.journal()[0]
+        self.assertEqual(record["operation_id"], plan["operationId"])
+        self.assertEqual(
+            (record["outcome"], record["object_id"], record["ib_user"]), ("committed", ID, "integration")
+        )
+        self.assertTrue(record["actor"] and record["started_at"] and record["finished_at"])
+        self.assertFalse({"ticket", "before", "after", "data"} & set(record))
+        self.assertEqual(self.plans.audit.lookup(plan["operationId"]), record)
+        self.assertIsNone(self.plans.audit.lookup("' OR 1=1 --"))
         with self.assertRaisesRegex(ValueError, "уже использован"):
             await self.apply(plan)
 
@@ -92,6 +121,7 @@ class ChangeTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(ValueError, "изменилась"):
             await self.apply(plan)
         self.assertEqual(self.client.writes, [])
+        self.assertEqual(self.journal()[0]["outcome"], "conflict")
 
     async def test_limits_are_utf16_and_unknown_limits_are_reported(self):
         async def limits(collection):
@@ -111,7 +141,8 @@ class ChangeTests(unittest.IsolatedAsyncioTestCase):
         self.client.row["Rows"] = []
 
         async def written(**args):
-            return {"status": 200, "data": {"Rows": [{"A": 1, "Generated": 2}]}}
+            self.client.row["Rows"] = [{"A": 1, "Generated": 2}]
+            return {"status": 200}
 
         self.client.update = written
         plan = await self.prepare(data={"Rows": [{"A": True}]}, replaceTableSections=True)
@@ -122,7 +153,7 @@ class ChangeTests(unittest.IsolatedAsyncioTestCase):
         create = await self.plans.prepare(
             base="demo", operation="create", collection=COLLECTION, data={"A": 1}
         )
-        self.assertNotIn("before", create)
+        self.assertIsNone(create["before"])
         applied = await self.apply(create)
         self.assertNotIn("id", applied)
         self.assertFalse(applied["verification"]["checked"])
@@ -154,7 +185,7 @@ class ChangeTests(unittest.IsolatedAsyncioTestCase):
             await self.plans.prepare(operation="delete", **args)
         self.profile["physicalDelete"] = True
         p = await self.plans.prepare(operation="delete", **args)
-        self.assertNotIn("after", p)
+        self.assertIsNone(p["after"])
         result = await self.apply(p)
         self.assertNotIn("verification", result)
         self.assertEqual(self.client.writes[-1]["confirmId"], ID)
@@ -177,8 +208,9 @@ class ChangeTests(unittest.IsolatedAsyncioTestCase):
                 await self.apply(b)
         finally:
             finish.set()
-        with self.assertRaisesRegex(ValueError, "lost connection.*План закрыт"):
+        with self.assertRaisesRegex(ValueError, "неизвестен.*План закрыт"):
             await first
+        self.assertEqual([r["outcome"] for r in self.journal()], ["unknown", "conflict"])
         for p in [a, b]:
             with self.assertRaisesRegex(ValueError, "уже использован"):
                 await self.apply(p)
@@ -194,3 +226,86 @@ class ChangeTests(unittest.IsolatedAsyncioTestCase):
             await self.prepare()
         with self.assertRaisesRegex(ValueError, "96 КиБ"):
             await self.prepare(data={"Description": "Ю" * 50000})
+
+    async def test_row_diffs_report_positions_omitted_values_and_clear(self):
+        self.client.row["Rows"] = [{"A": "x", "B": 1, "LineNumber": 1}, {"A": "y", "B": 2}, {"A": "z"}]
+        plan = await self.prepare(
+            data={"Rows": [{"A": "x"}, {"A": "new", "B": 2}]}, replaceTableSections=True
+        )
+        diff = plan["tableDiff"]["Rows"]
+        self.assertEqual(diff["changedRows"], [{"row": 1, "fields": ["B"]}, {"row": 2, "fields": ["A"]}])
+        self.assertEqual(diff["removedRows"], [3])
+        self.assertEqual(diff["beforeCount"], 3)
+        self.assertEqual(plan["before"]["Rows"], self.client.row["Rows"])
+        self.assertEqual(
+            (await self.prepare(data={"Rows": []}, replaceTableSections=True))["tableDiff"]["Rows"][
+                "removedRows"
+            ],
+            [1, 2, 3],
+        )
+        new = await self.plans.prepare(
+            base="demo", operation="create", collection=COLLECTION, data={"Rows": [{"A": True}]}
+        )
+        self.assertEqual(new["tableDiff"]["Rows"]["addedRows"], [1])
+
+    async def test_durable_intent_precedes_mutation_and_filters_response_bodies(self):
+        plan = await self.prepare()
+
+        async def write(**args):
+            self.assertEqual(self.journal()[0]["outcome"], "started")
+            self.client.row["Description"] = args["data"]["Description"]
+            return {"status": 200, "id": ID, "data": {"extra": "redacted-value"}}
+
+        self.client.update = write
+        result = await self.apply(plan)
+        self.assertNotIn("redacted-value", str(result))
+        stored = self.audit_path.read_bytes()
+        for text in ["redacted-value", "Старое", "Новое", plan["ticket"]]:
+            self.assertNotIn(text.encode(), stored)
+        self.assertEqual(self.journal()[0]["finished_at"][-6:], "+00:00")
+
+    async def test_registry_unavailable_blocks_mutation_and_finalize_error_consumes_ticket(self):
+        self.assertIsNone(self.plans.audit.lookup(ID))
+        self.assertFalse(self.audit_path.exists())
+        plan = await self.prepare()
+        self.plans.audit = AuditLog(self.audit_path.parent / "missing" / "audit.db")
+        with self.assertRaisesRegex(ValueError, plan["operationId"] + ".*не отправлена"):
+            await self.apply(plan)
+        self.assertFalse(self.client.writes)
+        self.plans.audit = AuditLog(self.audit_path)
+        plan = await self.prepare()
+        with (
+            patch.object(self.plans.audit, "finish", side_effect=AuditError()),
+            self.assertRaisesRegex(ValueError, plan["operationId"] + ".*приняла запись"),
+        ):
+            await self.apply(plan)
+        self.assertEqual(self.journal()[0]["outcome"], "started")
+        with self.assertRaisesRegex(ValueError, "уже использован"):
+            await self.apply(plan)
+        self.assertEqual(len(self.client.writes), 1)
+
+    async def test_transaction_conflicts_rejections_and_network_outcomes_are_sanitized(self):
+        for status, outcome in [(412, "conflict"), (403, "rejected"), (500, "unknown"), (None, "unknown")]:
+
+            async def fail(_status=status, **args):
+                raise TransportError("secret-sentinel", _status)
+
+            self.client.update = fail
+            plan = await self.prepare()
+            with self.assertRaisesRegex(ValueError, plan["operationId"]) as caught:
+                await self.apply(plan)
+            self.assertNotIn("secret-sentinel", str(caught.exception))
+            self.assertEqual(self.journal()[-1]["outcome"], outcome)
+            self.assertEqual(self.journal()[-1]["http_status"], status)
+        self.assertNotIn(b"secret-sentinel", self.audit_path.read_bytes())
+
+    async def test_cancelled_dispatched_write_leaves_unknown_outcome(self):
+        plan = await self.prepare()
+
+        async def cancelled(**args):
+            raise asyncio.CancelledError()
+
+        self.client.update = cancelled
+        with self.assertRaises(asyncio.CancelledError):
+            await self.apply(plan)
+        self.assertEqual(self.journal()[0]["outcome"], "unknown")

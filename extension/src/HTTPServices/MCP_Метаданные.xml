@@ -73,6 +73,64 @@
 					</Method>
 				</ChildObjects>
 			</URLTemplate>
+			<URLTemplate uuid="3b655ed6-9b26-47ea-98fa-fceb591adcc4">
+				<Properties>
+					<Name>Изменение</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Изменение</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+					<Template>/v1/change</Template>
+				</Properties>
+				<ChildObjects>
+					<Method uuid="2a64a51e-218a-41ee-86ef-c86ff9e8eccb">
+						<Properties>
+							<Name>Выполнить</Name>
+							<Synonym>
+								<v8:item>
+									<v8:lang>ru</v8:lang>
+									<v8:content>Выполнить</v8:content>
+								</v8:item>
+							</Synonym>
+							<Comment/>
+							<HTTPMethod>POST</HTTPMethod>
+							<Handler>ИзменениеВыполнить</Handler>
+						</Properties>
+					</Method>
+				</ChildObjects>
+			</URLTemplate>
+			<URLTemplate uuid="36b5646f-dac2-489a-a226-ff8df05ffc48">
+				<Properties>
+					<Name>ОбластьЗаписи</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>ОбластьЗаписи</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+					<Template>/v1/write-scope</Template>
+				</Properties>
+				<ChildObjects>
+					<Method uuid="b180f1ef-0c01-48a8-ad8e-81eb0ca3bfb6">
+						<Properties>
+							<Name>Выполнить</Name>
+							<Synonym>
+								<v8:item>
+									<v8:lang>ru</v8:lang>
+									<v8:content>Выполнить</v8:content>
+								</v8:item>
+							</Synonym>
+							<Comment/>
+							<HTTPMethod>POST</HTTPMethod>
+							<Handler>ОбластьЗаписиВыполнить</Handler>
+						</Properties>
+					</Method>
+				</ChildObjects>
+			</URLTemplate>
 			<URLTemplate uuid="ad9c3009-cc05-43b1-9052-beef141c2520">
 				<Properties>
 					<Name>ОграниченияПолей</Name>

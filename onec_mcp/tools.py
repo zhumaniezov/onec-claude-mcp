@@ -78,7 +78,7 @@ def definitions(writable):
         ),
         tool(
             "onec_list",
-            "Прочитать страницу данных. Фильтры объединяются условием И. Укажите select для больших объектов.",
+            "Прочитать разрешённые поля. Ограничьте ответ через select. Фильтры объединяются условием И.",
             {**SET, **SELECT, **PAGE, "filter": array(FILTER, 16), "orderBy": array(ORDER, 10)},
             SET,
         ),
@@ -94,7 +94,8 @@ def definitions(writable):
             [
                 tool(
                     "onec_prepare_change",
-                    "Подготовить одно изменение. Покажите пользователю предпросмотр. mark меняет DeletionMark, delete физически удаляет объект.",
+                    "Подготовить одно изменение. Покажите значения до и после и изменения строк. "
+                    "mark устанавливает DeletionMark, delete физически удаляет объект.",
                     {
                         **SET,
                         "operation": enum("create", "update", "mark", "delete"),
@@ -114,7 +115,8 @@ def definitions(writable):
                 ),
                 tool(
                     "onec_apply_change",
-                    "Применить показанный план по одноразовому билету. Проверьте verification.differences.",
+                    "После согласия пользователя применить показанный план по одноразовому билету. "
+                    "Сохраните operationId для сверки в журнале. Проверьте verification.differences.",
                     {**BASE, "ticket": GUID},
                     ("base", "ticket"),
                     read_only=False,

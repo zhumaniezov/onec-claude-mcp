@@ -9,13 +9,44 @@ from urllib.parse import quote, urlsplit
 
 _PROFILE_NAME = re.compile(r"[A-Za-z0-9_-]{1,64}")
 _ENV_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
-_DEFAULTS = {"allowLoopbackHttp": False, "physicalDelete": False, "timeoutMs": 20000, "maxResponseMiB": 32}
+_DEFAULTS = {
+    "allowLoopbackHttp": False,
+    "physicalDelete": False,
+    "timeoutMs": 20000,
+    "maxResponseMiB": 32,
+}
 _CREDENTIALS = {"usernameEnv", "passwordEnv", "tokenEnv"}
-_KEYS = _CREDENTIALS | _DEFAULTS.keys() | {"publicationUrl", "label", "writeCollections"}
+_KEYS = (
+    _CREDENTIALS
+    | _DEFAULTS.keys()
+    | {"publicationUrl", "label", "writeCollections", "readCollections", "readFields"}
+)
 
 
 def _bad_field(path: str) -> ValueError:
     return ValueError("Проверьте поля файла профилей: " + path)
+
+
+def _names(values, path, *, field_paths=False):
+    if not isinstance(values, list):
+        raise _bad_field(path)
+    if values == ["*"]:
+        return ["*"]
+    result = []
+    for name in values:
+        parts = name.split("/") if isinstance(name, str) else []
+        if not parts or len(parts) > (2 if field_paths else 1) or not all(p.isidentifier() for p in parts):
+            raise _bad_field(path)
+        if name not in result:
+            result.append(name)
+    return result
+
+
+def can_read_collection(profile, name):
+    collections = profile.get("readCollections")
+    if collections is not None and name not in collections and "*" not in collections:
+        return False
+    return "readFields" not in profile or bool(profile["readFields"].get(name))
 
 
 def _publication_root(raw: str, allow_loopback: bool, name: str) -> str:
@@ -78,7 +109,10 @@ def parse_profiles(raw) -> dict[str, dict]:
         for field in ("allowLoopbackHttp", "physicalDelete"):
             if not isinstance(profile[field], bool):
                 raise _bad_field(path + "." + field)
-        for field, low, high in (("timeoutMs", 1000, 120000), ("maxResponseMiB", 1, 128)):
+        for field, low, high in (
+            ("timeoutMs", 1000, 120000),
+            ("maxResponseMiB", 1, 128),
+        ):
             value = profile[field]
             if type(value) not in (int, float) or not low <= value <= high or int(value) != value:
                 raise _bad_field(path + "." + field)
@@ -87,6 +121,15 @@ def parse_profiles(raw) -> dict[str, dict]:
         if not isinstance(allowed, list) or any(not isinstance(item, str) or not item for item in allowed):
             raise _bad_field(path + ".writeCollections")
         profile["writeCollections"] = list(allowed)
+        if "readCollections" in fields:
+            profile["readCollections"] = _names(fields["readCollections"], path + ".readCollections")
+        if "readFields" in fields:
+            rules = fields["readFields"]
+            if not isinstance(rules, dict) or not all(isinstance(k, str) and k.isidentifier() for k in rules):
+                raise _bad_field(path + ".readFields")
+            profile["readFields"] = {
+                k: _names(v, path + ".readFields." + k, field_paths=True) for k, v in rules.items()
+            }
         root = _publication_root(publication, profile["allowLoopbackHttp"], name)
         if ("usernameEnv" in fields) != ("passwordEnv" in fields) or (
             "tokenEnv" in fields and "usernameEnv" in fields
@@ -95,7 +138,9 @@ def parse_profiles(raw) -> dict[str, dict]:
         if profile["physicalDelete"] and not allowed:
             raise ValueError("Для physicalDelete укажите writeCollections в профиле " + name)
         profile.update(
-            name=name, odataUrl=root + "/odata/standard.odata", extensionUrl=root + "/hs/onec_mcp/v1/"
+            name=name,
+            odataUrl=root + "/odata/standard.odata",
+            extensionUrl=root + "/hs/onec_mcp/v1/",
         )
         profiles[name] = profile
     if not profiles:

@@ -51,7 +51,7 @@
 			<ScriptVariant>Russian</ScriptVariant>
 			<DefaultRoles/>
 			<Vendor/>
-			<Version>1.1.0</Version>
+			<Version>1.2.0</Version>
 			<BriefInformation/>
 			<DetailedInformation/>
 			<Copyright/>
@@ -60,7 +60,10 @@
 		</Properties>
 		<ChildObjects>
 			<Role>MCP_ДоступКМетаданным</Role>
+			<Role>MCP_АтомарнаяЗапись</Role>
+			<Role>MCP_НастройкаЗаписи</Role>
 			<HTTPService>MCP_Метаданные</HTTPService>
+			<Constant>MCP_ОбластьЗаписи</Constant>
 		</ChildObjects>
 	</Configuration>
 </MetaDataObject>

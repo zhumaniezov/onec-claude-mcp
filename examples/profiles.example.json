@@ -5,6 +5,10 @@
       "publicationUrl": "https://onec.example.org/demo",
       "usernameEnv": "ONEC_DEMO_USER",
       "passwordEnv": "ONEC_DEMO_PASSWORD",
+      "readCollections": ["Catalog_ПозицииСтенда"],
+      "readFields": {
+        "Catalog_ПозицииСтенда": ["Ref_Key", "DataVersion", "Code", "Description"]
+      },
       "writeCollections": [],
       "physicalDelete": false
     }

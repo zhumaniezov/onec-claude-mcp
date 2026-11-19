@@ -33,6 +33,11 @@ class TestOData(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.calls = []
         self.reply = (200, b'{"value":[]}', {})
+        self.capabilities = (
+            200,
+            b'{"protocolVersion":1,"dataTransport":"odata-v3","atomicWrites":true}',
+            {},
+        )
         self.xml = XML
         fixture = self
 
@@ -44,10 +49,18 @@ class TestOData(unittest.IsolatedAsyncioTestCase):
                 url = urlsplit(self.path)
                 body = self.rfile.read(int(self.headers.get("Content-Length", "0")))
                 fixture.calls.append(
-                    (self.command, unquote(url.path), parse_qs(url.query), self.headers, body)
+                    (
+                        self.command,
+                        unquote(url.path),
+                        parse_qs(url.query),
+                        self.headers,
+                        body,
+                    )
                 )
                 if url.path.endswith("$metadata"):
                     status, data, headers = 200, fixture.xml.encode(), {}
+                elif url.path == "/ref/hs/onec_mcp/v1/capabilities":
+                    status, data, headers = fixture.capabilities
                 else:
                     status, data, headers = fixture.reply
                 if status is None:
@@ -65,10 +78,14 @@ class TestOData(unittest.IsolatedAsyncioTestCase):
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
         self.thread = threading.Thread(target=lambda: self.server.serve_forever(0.02), daemon=True)
         self.thread.start()
-        self.url = "http://127.0.0.1:%d/ref/odata/standard.odata" % self.server.server_port
+        self.url = f"http://127.0.0.1:{self.server.server_port}/ref/odata/standard.odata"
         self.http = Transport(self.url, allow_insecure_http=True, username="local", password="demo")
         self.profile = {"writeCollections": [CAT], "physicalDelete": True}
-        self.client = ODataClient(self.profile, self.http)
+        self.extension = Transport(
+            self.url.replace("/odata/standard.odata", "/hs/onec_mcp/v1"),
+            allow_insecure_http=True,
+        )
+        self.client = ODataClient(self.profile, self.http, self.extension)
 
     def tearDown(self):
         self.server.shutdown()
@@ -141,16 +158,29 @@ class TestOData(unittest.IsolatedAsyncioTestCase):
             "replaceTableSections": True,
         }
         await self.client.validate_write("update", **args)
-        self.assertEqual(len(self.calls), 2)
-        self.reply = 204, b"", {}
-        await self.client.update(**args)
-        method, _, _, headers, body = self.calls[-1]
-        self.assertEqual(method, "PATCH")
-        self.assertEqual(headers["if-match"], VERSION)
+        self.assertEqual([call[0] for call in self.calls], ["GET", "GET", "GET"])
+        self.reply = (
+            200,
+            json.dumps({"id": ID, "version": VERSION, "privateField": "hidden"}).encode(),
+            {},
+        )
+        self.assertEqual(await self.client.update(**args), {"status": 200, "id": ID, "etag": VERSION})
+        method, path, _, headers, body = self.calls[-1]
+        self.assertEqual(method, "POST")
+        self.assertEqual(path, "/ref/hs/onec_mcp/v1/change")
         self.assertIsNone(headers.get("1C_OData-DataLoadMode"))
-        self.assertEqual(json.loads(body)["Количество"], 9007199254740993)
-        self.assertEqual(json.loads(body)["Строки@odata.type"], "Collection(S.Row)")
-        self.assertEqual(json.loads(body)["Строки"], rows)
+        wire = json.loads(body)
+        self.assertEqual(
+            wire,
+            {
+                "version": VERSION,
+                "operation": "update",
+                "id": ID,
+                "collection": CAT,
+                "replaceTableSections": True,
+                "data": {"Количество": 9007199254740993, "Строки": rows},
+            },
+        )
 
     async def test_write_validation_precedes_any_modification(self):
         disabled = ODataClient({"writeCollections": []}, self.http)
@@ -175,6 +205,28 @@ class TestOData(unittest.IsolatedAsyncioTestCase):
         await self.client.validate_write("create", collection=CAT, data={"Description": "Ж" * 10 + "🙂"})
         self.assertTrue(all(call[0] == "GET" for call in self.calls))
 
+    async def test_real_1c_row_numbers_on_create_and_atomic_update(self):
+        self.xml = XML.replace(
+            '<ComplexType Name="Row">',
+            '<ComplexType Name="Row"><Property Name="LineNumber" Type="Edm.Int64"/>',
+        )
+        self.reply = 201, json.dumps({"Ref_Key": ID, "DataVersion": VERSION}).encode(), {}
+        rows = [{"Текст": "one"}, {"Текст": "two", "LineNumber": 2}]
+        await self.client.create(collection=CAT, data={"Строки": rows})
+        stored = json.loads(self.calls[-1][4])["Строки"]
+        self.assertEqual([row["LineNumber"] for row in stored], ["1", "2"])
+        self.assertNotIn("LineNumber", rows[0])
+        self.reply = 200, json.dumps({"id": ID, "version": VERSION}).encode(), {}
+        await self.client.update(
+            collection=CAT, id=ID, etag=VERSION, data={"Строки": stored}, replaceTableSections=True
+        )
+        sent = json.loads(self.calls[-1][4])["data"]["Строки"]
+        self.assertEqual([row["LineNumber"] for row in sent], [1, 2])
+        posts = sum(call[0] == "POST" for call in self.calls)
+        with self.assertRaisesRegex(ValueError, "LineNumber"):
+            await self.client.create(collection=CAT, data={"Строки": [{"LineNumber": "2"}]})
+        self.assertEqual(sum(call[0] == "POST" for call in self.calls), posts)
+
     async def test_412_disconnect_and_redirect_are_not_retried(self):
         self.reply = 412, b"secret server message", {}
         with self.assertRaises(TransportError) as error:
@@ -188,17 +240,45 @@ class TestOData(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(TransportError) as redirected:
             await self.client.list(collection=CAT)
         self.assertEqual(redirected.exception.status, 302)
-        self.assertEqual([c[0] for c in self.calls], ["GET", "PATCH", "POST", "GET"])
+        self.assertEqual([c[0] for c in self.calls], ["GET", "GET", "POST", "POST", "GET"])
 
-    async def test_delete_requires_specific_id_and_sends_conditional_header(self):
-        self.reply = 204, b"", {}
+    async def test_mark_and_deletion_use_the_version_inside_the_atomic_command(self):
+        self.reply = 200, json.dumps({"id": ID, "version": VERSION}).encode(), {}
         await self.client.markDeletion(collection=CAT, id=ID, etag=VERSION)
-        self.assertEqual(json.loads(self.calls[-1][4]), {"DeletionMark": True})
+        self.assertEqual(
+            json.loads(self.calls[-1][4]),
+            {"operation": "mark", "collection": CAT, "id": ID, "version": VERSION},
+        )
+        self.reply = 200, json.dumps({"id": ID, "version": None}).encode(), {}
         await self.client.remove(collection=CAT, id=ID, etag=VERSION, confirmId=ID)
-        self.assertEqual((self.calls[-1][0], self.calls[-1][3]["if-match"]), ("DELETE", VERSION))
+        self.assertEqual(
+            json.loads(self.calls[-1][4]),
+            {"operation": "delete", "collection": CAT, "id": ID, "version": VERSION},
+        )
+
+    async def test_capability_loss_after_successful_preparation_never_writes_through_odata(
+        self,
+    ):
+        args = {
+            "collection": CAT,
+            "id": ID,
+            "etag": VERSION,
+            "data": {"Description": "ok"},
+        }
+        await self.client.validate_write("update", **args)
+        self.capabilities = 200, b'{"protocolVersion":1,"dataTransport":"odata-v3"}', {}
+        with self.assertRaises(ValueError):
+            await self.client.update(**args)
+        with self.assertRaises(ValueError):
+            await ODataClient(self.profile, self.http).update(**args)
+        self.assertTrue(all(c[0] == "GET" for c in self.calls))
 
     async def test_url_limits_and_xml_errors(self):
-        for url in ("http://example.test/", "file:///etc", "https://user:password@example.test/x"):
+        for url in (
+            "http://example.test/",
+            "file:///etc",
+            "https://user:password@example.test/x",
+        ):
             with self.assertRaises(ValueError):
                 Transport(url, allow_insecure_http=True)
         for invalid in ("../unsafe", "https://x", "%2f", "/other"):
@@ -224,7 +304,11 @@ class TestOData(unittest.IsolatedAsyncioTestCase):
             encoded = compressor.compress(b'{"n":4}') + compressor.flush()
             self.reply = 200, encoded, {"Content-Encoding": "deflate"}
             self.assertEqual((await self.http.request("capabilities"))["data"], {"n": 4})
-        self.reply = 201, gzip.compress(b'{"ok":true}')[:-6], {"Content-Encoding": "gzip"}
+        self.reply = (
+            201,
+            gzip.compress(b'{"ok":true}')[:-6],
+            {"Content-Encoding": "gzip"},
+        )
         with self.assertRaisesRegex(TransportError, "неизвестен"):
             await self.client.create(collection=CAT, data={"Description": "ok"})
         self.assertEqual([c[0] for c in self.calls].count("POST"), 1)
