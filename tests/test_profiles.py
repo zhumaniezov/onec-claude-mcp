@@ -53,7 +53,8 @@ class ProfilesTests(unittest.TestCase):
                 parse_profiles(config(**bad))
             self.assertNotIn("secret123", str(error.exception))
 
-    def test_credential_values_are_read_only_on_access(self):
+    @patch("onec_mcp.profiles.sys.platform", "linux")
+    def test_legacy_environment_credentials_on_non_windows(self):
         p = parse_profiles(config(usernameEnv="TEST_USER", passwordEnv="TEST_PASS"))["demo"]
         with patch.dict("os.environ", {}, clear=True):
             with self.assertRaisesRegex(ValueError, "TEST_USER"):
@@ -61,6 +62,35 @@ class ProfilesTests(unittest.TestCase):
         with patch.dict("os.environ", {"TEST_USER": "testuser", "TEST_PASS": "pass"}, clear=True):
             self.assertEqual(connection_options(p)["password"], "pass")
         self.assertNotIn("pass", p.values())
+
+    def test_vault_reference_is_lazy_and_bound_to_the_publication(self):
+        auth = {"username": "reader", "password": "fake-password", "token": None}
+        with patch("onec_mcp.profiles.read_windows_credential", return_value=auth) as read:
+            profile = parse_profiles(config(publicationUrl="https://EXAMPLE.test:443/temp/../base/",
+                                            credentialRef="demo"))["demo"]
+            read.assert_not_called()
+            self.assertNotIn("password", profile)
+            self.assertEqual(connection_options(profile, {})["password"], auth["password"])
+            read.assert_called_once_with("demo", "https://example.test/base")
+
+    def test_missing_vault_record_fails_without_using_environment(self):
+        profile = parse_profiles(config(credentialRef="demo"))["demo"]
+        with patch("onec_mcp.profiles.read_windows_credential", side_effect=ValueError("missing")):
+            with self.assertRaisesRegex(ValueError, "missing"):
+                connection_options(profile, {"ONEC_DEMO_PASSWORD": "unused"})
+
+    @patch("onec_mcp.profiles.sys.platform", "win32")
+    def test_windows_environment_profiles_require_migration(self):
+        for legacy in ({"usernameEnv": "U", "passwordEnv": "P"}, {"tokenEnv": "T"}):
+            with self.subTest(keys=list(legacy)), self.assertRaisesRegex(ValueError, "credentialRef"):
+                parse_profiles(config(**legacy))
+
+    def test_mixed_and_invalid_references_are_rejected_without_echoing_values(self):
+        for fields in ({"credentialRef": "demo", "tokenEnv": "T"}, {"credentialRef": None},
+                       {"credentialRef": "secret/sentinel"}):
+            with self.subTest(keys=list(fields)), self.assertRaises(ValueError) as error:
+                parse_profiles(config(**fields))
+            self.assertNotIn("sentinel", str(error.exception))
 
     def test_loopback_and_unicode_paths(self):
         p = parse_profiles(config(publicationUrl="http://[::1]:8888/база", allowLoopbackHttp=True))["demo"]

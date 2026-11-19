@@ -66,6 +66,9 @@ def main():
             "mcp",
             "--collect-data",
             "jsonschema_specifications",
+            # CredRead imports this module in native code when returning LastWritten.
+            "--hidden-import",
+            "win32timezone",
             str(root / "scripts" / "launcher.py"),
         ],
         env=env,

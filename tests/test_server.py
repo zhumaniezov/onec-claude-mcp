@@ -6,11 +6,13 @@ import tempfile
 import unittest
 from contextlib import asynccontextmanager
 from pathlib import Path
+from unittest.mock import patch
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from onec_mcp import __version__
 from onec_mcp.audit import AuditLog
+from onec_mcp.server import main
 
 
 @asynccontextmanager
@@ -29,6 +31,30 @@ async def connect(bases):
 
 
 class ShutdownTests(unittest.TestCase):
+    def test_invalid_credential_type_does_not_echo_the_argument(self):
+        marker = "synthetic-input-marker"
+        args = ["onec", "--config", "unused", "--credential-set", "demo", "--credential-type", marker]
+        with (patch.object(sys, "argv", args), patch("sys.stderr") as stderr,
+              self.assertRaises(SystemExit)):
+            main()
+        self.assertNotIn(marker, str(stderr.write.call_args_list))
+
+    def test_setup_uses_selected_profile_and_exits_before_starting_mcp(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config = Path(directory) / "profiles.json"
+            config.write_text(json.dumps({"bases": {"demo": {
+                "publicationUrl": "https://example.invalid/base/", "credentialRef": "my-login",
+            }}}), encoding="utf-8")
+            args = ["onec", "--config", str(config), "--credential-set", "demo",
+                    "--credential-type", "bearer", "--replace"]
+            with (patch.object(sys, "argv", args), patch("builtins.print"),
+                  patch("onec_mcp.server.provision_windows_credential") as provision,
+                  patch("onec_mcp.server.AuditLog") as audit):
+                main()
+                provision.assert_called_once_with("my-login", "https://example.invalid/base",
+                                                  "bearer", replace=True)
+                audit.assert_not_called()
+
     def test_offline_audit_lookup_uses_utf8_and_does_not_create_missing_journal(self):
         exe = os.environ.get("ONEC_TEST_EXE")
         command = [exe] if exe else [sys.executable, "-m", "onec_mcp"]

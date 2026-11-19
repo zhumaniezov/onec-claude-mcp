@@ -4,8 +4,11 @@ import ipaddress
 import json
 import os
 import re
+import sys
 from pathlib import Path
 from urllib.parse import quote, urlsplit
+
+from .credentials import read_windows_credential, validate_credential_alias
 
 _PROFILE_NAME = re.compile(r"[A-Za-z0-9_-]{1,64}")
 _ENV_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
@@ -19,7 +22,7 @@ _CREDENTIALS = {"usernameEnv", "passwordEnv", "tokenEnv"}
 _KEYS = (
     _CREDENTIALS
     | _DEFAULTS.keys()
-    | {"publicationUrl", "label", "writeCollections", "readCollections", "readFields"}
+    | {"publicationUrl", "label", "writeCollections", "readCollections", "readFields", "credentialRef"}
 )
 
 
@@ -103,7 +106,15 @@ def parse_profiles(raw) -> dict[str, dict]:
             label = fields["label"]
             if not isinstance(label, str) or len(label.encode("utf-16-le", "surrogatepass")) > 240:
                 raise _bad_field(path + ".label")
-        for field in _CREDENTIALS.intersection(fields):
+        env_fields = _CREDENTIALS.intersection(fields)
+        if "credentialRef" in fields:
+            if env_fields:
+                raise ValueError("credentialRef несовместим с переменными доступа в профиле " + name)
+            profile["credentialRef"] = validate_credential_alias(fields["credentialRef"])
+        if env_fields and sys.platform == "win32":
+            raise ValueError("На Windows замените поля доступа из окружения на credentialRef "
+                             "и сохраните секрет командой --credential-set для профиля " + name)
+        for field in env_fields:
             if not isinstance(fields[field], str) or not _ENV_NAME.fullmatch(fields[field]):
                 raise _bad_field(path + "." + field)
         for field in ("allowLoopbackHttp", "physicalDelete"):
@@ -139,6 +150,7 @@ def parse_profiles(raw) -> dict[str, dict]:
             raise ValueError("Для physicalDelete укажите writeCollections в профиле " + name)
         profile.update(
             name=name,
+            publicationUrl=root,
             odataUrl=root + "/odata/standard.odata",
             extensionUrl=root + "/hs/onec_mcp/v1/",
         )
@@ -158,9 +170,7 @@ def load_profiles(path: str | Path | None) -> dict[str, dict]:
     return parse_profiles(raw)
 
 
-def connection_options(profile: dict, env=None) -> dict:
-    env = os.environ if env is None else env
-
+def _environment_credentials(profile, env):
     def secret(key):
         variable = profile.get(key)
         if variable is None:
@@ -174,6 +184,16 @@ def connection_options(profile: dict, env=None) -> dict:
         "username": secret("usernameEnv"),
         "password": secret("passwordEnv"),
         "token": secret("tokenEnv"),
+    }
+
+
+def connection_options(profile: dict, env=None) -> dict:
+    if "credentialRef" in profile:
+        credentials = read_windows_credential(profile["credentialRef"], profile["publicationUrl"])
+    else:
+        credentials = _environment_credentials(profile, os.environ if env is None else env)
+    return {
+        **credentials,
         "allow_insecure_http": profile["allowLoopbackHttp"],
         "timeout_ms": profile["timeoutMs"],
         "max_bytes": profile["maxResponseMiB"] * 1024 * 1024,

@@ -17,6 +17,7 @@ from mcp.types import TextContent
 from . import __version__
 from .audit import AuditLog
 from .changes import ChangePlans
+from .credentials import provision_windows_credential
 from .odata import ODataClient
 from .profiles import can_read_collection, connection_options, load_profiles
 from .tools import definitions
@@ -225,15 +226,37 @@ async def serve(profiles, audit):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="MCP-коннектор Claude Code для 1С.")
+    parser = argparse.ArgumentParser(description="MCP-коннектор Claude Code для 1С.", allow_abbrev=False)
     parser.add_argument("--version", action="version", version=__version__)
     parser.add_argument("--config", default=os.environ.get("ONEC_MCP_CONFIG"), help="Путь к profiles.json")
     parser.add_argument("--audit-db", default=os.environ.get("ONEC_MCP_AUDIT_DB"),
                         help="Файл журнала SQLite. По умолчанию onec-audit.sqlite3 рядом с профилями.")
-    parser.add_argument("--audit-show", type=UUID, metavar="UUID",
+    action = parser.add_mutually_exclusive_group()
+    action.add_argument("--audit-show", type=UUID, metavar="UUID",
                         help="Показать операцию из локального журнала по operationId и выйти.")
-    args = parser.parse_args()
+    action.add_argument("--credential-set", metavar="PROFILE",
+                        help="Сохранить учётные данные профиля в Диспетчере учётных данных Windows.")
+    parser.add_argument("--credential-type", metavar="{basic,bearer}",
+                        help="Способ аутентификации при сохранении учётных данных.")
+    parser.add_argument("--replace", action="store_true", help="Разрешить замену существующей записи.")
+    args, unknown = parser.parse_known_args()
+    if unknown:
+        parser.error("Неизвестный аргумент. Для справки укажите --help.")
     try:
+        if args.credential_set is not None:
+            if not args.config or not args.credential_type:
+                parser.error("Для --credential-set укажите файл профилей и --credential-type basic или bearer.")
+            if args.credential_type not in ("basic", "bearer"):
+                parser.error("Тип учётных данных должен быть basic или bearer.")
+            profile = load_profiles(args.config).get(args.credential_set)
+            if profile is None or "credentialRef" not in profile:
+                raise ValueError("Выберите существующий профиль с полем credentialRef.")
+            provision_windows_credential(profile["credentialRef"], profile["publicationUrl"],
+                                       args.credential_type, replace=args.replace)
+            print("Учётные данные сохранены. Перезапустите подключение MCP.")
+            return
+        if args.credential_type or args.replace:
+            parser.error("Укажите --credential-set для сохранения учётных данных.")
         if not args.config and not args.audit_db:
             parser.error("Укажите --config или путь к журналу --audit-db.")
         audit_path = (Path(args.audit_db) if args.audit_db else

@@ -2,10 +2,12 @@
 
 import base64
 import json
+import os
 import threading
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
+from uuid import uuid4
 
 from test_odata import CAT, ID, XML
 from test_server import connect
@@ -21,6 +23,7 @@ class Publication(ThreadingHTTPServer):
         self.row = None
         self.writes = []
         self.external_edit_on_change = False
+        self.expected_authorization = None
         self.mutation_lock = threading.Lock()
 
     def write_record(self, method, fields):
@@ -60,6 +63,9 @@ class Handler(BaseHTTPRequestHandler):
         return json.loads(self.rfile.read(int(self.headers["Content-Length"])))
 
     def do_GET(self):
+        expected = self.server.expected_authorization
+        if expected is not None and self.headers.get("Authorization") != expected:
+            return self.reply(401)
         path = self.resource
         if path == "/stand/odata/standard.odata/$metadata":
             return self.reply(200, XML)
@@ -137,7 +143,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 class WireCRUDTests(unittest.IsolatedAsyncioTestCase):
-    async def test_complete_catalog_lifecycle_through_stdio(self):
+    def start_publication(self):
         fixture = Publication()
         worker = threading.Thread(
             target=fixture.serve_forever, kwargs={"poll_interval": 0.02}, daemon=True
@@ -146,6 +152,61 @@ class WireCRUDTests(unittest.IsolatedAsyncioTestCase):
         self.addCleanup(worker.join)
         self.addCleanup(fixture.server_close)
         self.addCleanup(fixture.shutdown)
+        return fixture
+
+    @unittest.skipUnless(os.name == "nt", "requires Windows Credential Manager")
+    async def test_stdio_child_reads_native_wincred_for_basic_auth(self):
+        import pywintypes
+        import win32cred
+
+        from onec_mcp.credentials import credential_target
+
+        fixture = self.start_publication()
+        url = f"http://127.0.0.1:{fixture.server_port}/stand"
+        alias = "wire-test-" + uuid4().hex
+        target = credential_target(alias, url)
+        login, password = "fixture-user", uuid4().hex
+        fixture.expected_authorization = (
+            "Basic " + base64.b64encode(f"{login}:{password}".encode()).decode()
+        )
+        kind = win32cred.CRED_TYPE_GENERIC
+        with self.assertRaises(pywintypes.error) as absent:
+            win32cred.CredRead(target, kind, 0)
+        if absent.exception.winerror == 1312:
+            self.skipTest("This Windows logon session has no credential set.")
+        self.assertEqual(absent.exception.winerror, 1168)
+        win32cred.CredWrite(
+            {
+                "Type": kind,
+                "TargetName": target,
+                "Persist": win32cred.CRED_PERSIST_LOCAL_MACHINE,
+                "UserName": "OneC-Claude-MCP",
+                "CredentialBlob": json.dumps(
+                    {"v": 1, "mode": "basic", "username": login, "secret": password}
+                ),
+            },
+            0,
+        )
+        try:
+            profile = {
+                "publicationUrl": url,
+                "allowLoopbackHttp": True,
+                "credentialRef": alias,
+            }
+            async with connect({"stand": profile}) as (client, _):
+                # CredRead in this child also constructs LastWritten via win32timezone.
+                reply = await client.call_tool("onec_status", {"base": "stand"})
+                self.assertFalse(
+                    reply.isError,
+                    "The stdio child could not load its Windows credential.",
+                )
+                status = json.loads(reply.content[0].text)
+                self.assertTrue(status["odata"]["ok"] and status["extension"]["ok"])
+        finally:
+            win32cred.CredDelete(target, kind, 0)
+
+    async def test_complete_catalog_lifecycle_through_stdio(self):
+        fixture = self.start_publication()
         profile = {
             "publicationUrl": f"http://127.0.0.1:{fixture.server_port}/stand",
             "allowLoopbackHttp": True,
