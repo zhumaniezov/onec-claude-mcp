@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "onec-claude-mcp"
+version = "2.0.0"
+description = "MCP connector for 1C:Enterprise OData and Claude Code"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["mcp==1.30.0", "httpx==0.28.1", "anyio>=4.5,<5"]
+
+[project.urls]
+Repository = "https://github.com/zhumaniezov/onec-claude-mcp"
+
+[project.scripts]
+onec-claude-mcp = "onec_mcp.server:main"
+
+[tool.setuptools]
+packages = ["onec_mcp"]

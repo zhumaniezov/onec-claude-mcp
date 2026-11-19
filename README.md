@@ -1,6 +1,8 @@
 # Коннектор 1С для Claude Code
 
-Подключите одну или несколько баз 1С к Claude Code и обращайтесь к ним по имени. В комплекте готовый MCP-сервер для Node.js, устанавливаемое расширение 1С, исходный код обоих компонентов и тесты.
+Подключите одну или несколько баз 1С к Claude Code и обращайтесь к ним по имени. Коннектор версии 2.0.0 написан на Python. Для Windows x64 доступен готовый EXE со встроенным интерпретатором. Для других систем и Python-окружений доступен wheel. Расширение 1С версии 1.1.0 входит в комплект. [Скачать релиз](https://github.com/zhumaniezov/onec-claude-mcp/releases/tag/v2.0.0)
+
+**Переход с 1.0.0.** Сохраните свой profiles.json и имена переменных окружения. Установленное расширение 1.1.0 подходит и ко второй версии. Завершите ожидающие подтверждения, затем перерегистрируйте команду запуска по шагу 3. Билеты предпросмотра действуют в процессе, который их выдал.
 
 | Задача | Поддержка |
 | --- | --- |
@@ -29,7 +31,7 @@
 
 ## 2. Настроить профиль
 
-Распакуйте архив в постоянный каталог, например **C:\Tools\onec-claude-mcp**. Установите Node.js 22 или новее. Файл **dist/server.cjs** уже содержит библиотеки. Для обычного запуска достаточно Node.js.
+Распакуйте **onec-claude-mcp-v2.0.0-win-x64.zip** в постоянный каталог, например **C:\Tools\onec-claude-mcp**. В этом каталоге должны лежать **onec-claude-mcp.exe**, **examples** и **extension**. Готовый EXE включает Python, официальный MCP SDK и HTTP-клиент.
 
 Скопируйте **examples/profiles.example.json** как **profiles.json**. В publicationUrl укажите корень вашей публикации, например **https://onec.example.org/demo**. Для второй базы добавьте ещё одну запись в bases с собственным именем и переменными доступа. Имена профилей используют латинские буквы, цифры, дефис и подчёркивание.
 
@@ -41,7 +43,7 @@ $env:ONEC_DEMO_USER = $credential.UserName
 $env:ONEC_DEMO_PASSWORD = $credential.GetNetworkCredential().Password
 ```
 
-Доступны HTTP Basic через HTTPS, Bearer через tokenEnv для публикации с подходящим шлюзом и доступ без заголовка авторизации, если это предусмотрено стендом. Для локального HTTP укажите allowLoopbackHttp равным true и адрес localhost, 127.0.0.1 или [::1]. При внутреннем удостоверяющем центре можно передать Node.js доверенный сертификат через NODE_EXTRA_CA_CERTS перед запуском Claude.
+Доступны HTTP Basic через HTTPS, Bearer через tokenEnv для публикации с подходящим шлюзом и доступ без заголовка авторизации, если это предусмотрено стендом. Для локального HTTP укажите allowLoopbackHttp равным true и адрес localhost, 127.0.0.1 или [::1]. Для внутреннего удостоверяющего центра укажите путь к доверенному PEM-набору в переменной SSL_CERT_FILE процесса Claude. При переходе с Node.js перенесите настройку NODE_EXTRA_CA_CERTS, если вы её использовали.
 
 ## 3. Зарегистрировать в Claude Code
 
@@ -49,15 +51,30 @@ $env:ONEC_DEMO_PASSWORD = $credential.GetNetworkCredential().Password
 
 ```powershell
 $connector = 'C:\Tools\onec-claude-mcp'
-$node = (Get-Command node.exe -ErrorAction Stop).Source
-$server = Join-Path $connector 'dist\server.cjs'
+$server = Join-Path $connector 'onec-claude-mcp.exe'
 $profiles = Join-Path $connector 'profiles.json'
-claude mcp add --transport stdio --scope local onec -- $node $server --config $profiles
+claude mcp add --transport stdio --scope local onec -- $server --config $profiles
 claude mcp get onec
 claude
 ```
 
 **Connected** подтверждает связь Claude Code с локальным процессом. После запуска откройте **/mcp** или попросите Claude: «Проверь базу demo инструментом onec_status. Покажи отдельно результат OData и расширения». Убедитесь, что оба значения ok равны true и количество опубликованных коллекций соответствует ожиданию. [Документация Claude Code](https://code.claude.com/docs/en/mcp#option-3-add-a-local-stdio-server)
+
+Если имя onec уже занято записью версии 1.0.0, посмотрите её область через **claude mcp get onec**. Для записи в local выполните **claude mcp remove --scope local onec** и добавьте новую команду в той же области. Для user или project подставьте соответствующую область.
+
+### Запуск из Python
+
+Для Python 3.11+ скачайте файл **onec_claude_mcp-2.0.0-py3-none-any.whl** из того же релиза. При первом подключении сохраните [шаблон профиля](https://raw.githubusercontent.com/zhumaniezov/onec-claude-mcp/v2.0.0/examples/profiles.example.json) рядом с wheel как **profiles.json**, заполните его по шагу 2 и установите [расширение 1С](https://github.com/zhumaniezov/onec-claude-mcp/releases/download/v2.0.0/OneCMCP.cfe) по шагу 1. При обновлении укажите существующий файл профилей. В каталоге с wheel выполните:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install .\onec_claude_mcp-2.0.0-py3-none-any.whl
+$python = (Resolve-Path .\.venv\Scripts\python.exe).Path
+$profiles = (Resolve-Path .\profiles.json).Path
+claude mcp add --transport stdio --scope local onec -- $python -m onec_mcp --config $profiles
+```
+
+На Linux и macOS интерпретатор виртуального окружения находится в **.venv/bin/python**. При регистрации передайте абсолютные пути к интерпретатору и файлу профилей. Для установки wheel из публичной сети pip загружает зависимости. Архив для Windows уже содержит все библиотеки.
 
 ## 4. Первое чтение и первая запись
 
@@ -91,7 +108,7 @@ EDMX содержит описание публикации и может пок
 
 | Результат | Что проверить |
 | --- | --- |
-| Нет Connected | Node.js 22+, абсолютные пути к server.cjs и профилям, синтаксис JSON. |
+| Нет Connected | Абсолютные пути к EXE или Python из нужного окружения и файлу профилей, синтаксис JSON. Проверьте запуск той же команды с --version. |
 | HTTP 401 / 403 | Переменные окружения именно запущенного Claude, способ аутентификации публикации, роль расширения и права на объект. |
 | Работает OData, расширение возвращает 404 | Установку и применение CFE, rootUrl, запись HTTP-сервиса в публикации. |
 | Объект есть в onec_metadata, но отсутствует в onec_collections | Состав OData этой базы и права пользователя. Коннектор кэширует EDMX на 60 секунд. |
@@ -101,9 +118,18 @@ EDMX содержит описание публикации и может пок
 ## Исходники и воспроизведение
 
 ```powershell
-npm.cmd ci
-npm.cmd test
-npm.cmd run build
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e .
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Для сборки дистрибутивов из корня репозитория в Windows x64:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install build pyinstaller==6.22.3
+.\.venv\Scripts\python.exe -m build --wheel
+.\.venv\Scripts\python.exe scripts/build_windows.py
+.\.venv\Scripts\python.exe scripts/package_windows.py
 ```
 
 Тесты поднимают локальный HTTP-сервер со своими тестовыми записями. Исходники CFE находятся в **extension/src**, сценарий сборки — в **extension/build.ps1**. Параметр **-PlatformExe** принимает полный путь к 1cv8.exe. Сценарий создаёт отдельную временную базу и выводит путь к новому файлу CFE. Результаты проверки и сравнение GitHub-проектов находятся в **docs**.
