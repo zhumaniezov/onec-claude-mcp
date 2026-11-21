@@ -8,7 +8,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runtime", type=Path, default=Path("dist/windows"))
-    parser.add_argument("--archive", type=Path, default=Path("dist/onec-claude-mcp-v2.2.0-win-x64.zip"))
+    parser.add_argument("--archive", type=Path, default=Path("dist/onec-claude-mcp-v2.3.0-win-x64.zip"))
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     runtime = args.runtime.resolve()

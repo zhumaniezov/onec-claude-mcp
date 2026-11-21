@@ -94,11 +94,14 @@ def definitions(writable):
             [
                 tool(
                     "onec_prepare_change",
-                    "Подготовить одно изменение. Покажите значения до и после и изменения строк. "
-                    "mark устанавливает DeletionMark, delete физически удаляет объект.",
+                    "Подготовить одно изменение. Покажите значения до и после, изменения строк и поле posting. "
+                    "update проведённого документа перепроводит его в той же транзакции. mark устанавливает "
+                    "DeletionMark и у проведённого документа отменяет проведение. post проводит или "
+                    "перепроводит документ, unpost отменяет проведение. delete физически удаляет "
+                    "непроведённый объект.",
                     {
                         **SET,
-                        "operation": enum("create", "update", "mark", "delete"),
+                        "operation": enum("create", "update", "mark", "delete", "post", "unpost"),
                         "id": GUID,
                         "version": {"type": "string", "minLength": 1, "maxLength": 256},
                         "data": {

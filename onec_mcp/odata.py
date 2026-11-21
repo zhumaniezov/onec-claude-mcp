@@ -33,7 +33,8 @@ FLOAT_TYPES = {"Edm.Decimal", "Edm.Double", "Edm.Single"}
 NUMBER = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?")
 COLLECTION = re.compile(r"Collection\(([^)]+)\)")
 DATE = r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,7})?"
-WRITE_METHODS = {"create", "update", "markDeletion", "remove"}
+WRITE_METHODS = {"create", "update", "markDeletion", "remove", "post", "unpost"}
+POSTING_METHODS = {"post", "unpost"}
 
 
 def _require(condition, message):
@@ -417,6 +418,15 @@ def _fields(model, entity, data, *, sections=False, odata_annotations=False, dep
     return encoded
 
 
+class PostingOperationsUnavailable(ValueError):
+    """The installed extension cannot post or unpost documents. No change has been sent."""
+
+    def __init__(self):
+        super().__init__(
+            "Для проведения и отмены проведения обновите расширение OneCMCP до версии 1.3.0 или новее."
+        )
+
+
 class PostedDocumentGuardUnavailable(ValueError):
     """The extension cannot enforce the document policy. No change has been sent."""
 
@@ -595,6 +605,9 @@ class ODataClient:
             "Запись для набора отключена.",
         )
         _require(method in WRITE_METHODS, "Неизвестная операция.")
+        if method in POSTING_METHODS:
+            _require(collection.startswith("Document_"), "Проведение доступно только для документов.")
+            _require(data is None, "Проведение и отмена проведения не принимают реквизиты.")
         creating = method == "create"
         if not creating:
             _require(_guid(id) != NULL_GUID, "Пустая ссылка недопустима для записи.")
@@ -647,13 +660,17 @@ class ODataClient:
         preview = {
             "method": method,
             "collection": collection,
-            "fields": ["DeletionMark"] if method == "markDeletion" else list(data or {}),
+            "fields": (
+                ["DeletionMark"]
+                if method == "markDeletion"
+                else ["Posted"] if method in POSTING_METHODS else list(data or {})
+            ),
         }
         if id:
             preview["id"] = id
         return body, preview
 
-    async def _check_atomic_service(self, collection):
+    async def _check_atomic_service(self, collection, method=None):
         _require(
             self.extension is not None,
             "Для изменения существующего объекта требуется расширение с атомарной записью.",
@@ -669,11 +686,15 @@ class ODataClient:
         )
         if collection.startswith("Document_") and caps.get("protectsPostedDocuments") is not True:
             raise PostedDocumentGuardUnavailable()
+        if method in POSTING_METHODS and caps.get("postingOperations") is not True:
+            raise PostingOperationsUnavailable()
+        return caps
 
     async def validate_write(self, method, **args):
         _, preview = await self._prepare(method, **args)
         if method != "create":
-            await self._check_atomic_service(args["collection"])
+            caps = await self._check_atomic_service(args["collection"], method)
+            preview["repostsPostedDocuments"] = caps.get("repostsPostedDocuments") is True
         return preview
 
     async def _mutate(self, operation, **args):
@@ -697,12 +718,14 @@ class ODataClient:
                 except ValueError:
                     etag = None
             return {"status": response["status"], "id": key, "etag": etag}
-        await self._check_atomic_service(name)
+        await self._check_atomic_service(name, operation)
         wire = {
             "operation": {
                 "update": "update",
                 "markDeletion": "mark",
                 "remove": "delete",
+                "post": "post",
+                "unpost": "unpost",
             }[operation],
             "collection": name,
             "id": args["id"],
@@ -726,11 +749,15 @@ class ODataClient:
                 _require(etag is None, "Некорректная версия удалённого объекта.")
             else:
                 _version(etag)
+            posting = {k: data[k] for k in ("posted", "reposted") if k in data}
+            _require(all(type(v) is bool for v in posting.values()), "Некорректный признак проведения.")
+            if operation in POSTING_METHODS:
+                _require(posting.get("posted") is (operation == "post"), "1С не подтвердила проведение.")
         except (KeyError, ValueError):
             raise TransportError(
                 "Получен неполный ответ атомарной записи. Проверьте состояние объекта перед повтором."
             ) from None
-        return {"status": response["status"], "id": args["id"], "etag": etag}
+        return {"status": response["status"], "id": args["id"], "etag": etag, **posting}
 
     async def create(self, **args):
         return await self._mutate("create", **args)
@@ -743,3 +770,9 @@ class ODataClient:
 
     async def remove(self, **args):
         return await self._mutate("remove", **args)
+
+    async def post(self, **args):
+        return await self._mutate("post", **args)
+
+    async def unpost(self, **args):
+        return await self._mutate("unpost", **args)

@@ -9,10 +9,27 @@ from time import monotonic
 from uuid import uuid4
 
 from .audit import AuditError
-from .odata import PostedDocumentGuardUnavailable
-from .transport import PostedDocumentError
+from .odata import PostedDocumentGuardUnavailable, PostingOperationsUnavailable
+from .transport import ChangeRefusedError, PostedDocumentError
 
-_METHODS = {"create": "create", "update": "update", "mark": "markDeletion", "delete": "remove"}
+_METHODS = {
+    "create": "create",
+    "update": "update",
+    "mark": "markDeletion",
+    "delete": "remove",
+    "post": "post",
+    "unpost": "unpost",
+}
+_EXPECTED = {"markDeletion": {"DeletionMark": True}, "post": {"Posted": True}, "unpost": {"Posted": False}}
+_OLD_EXTENSION = (
+    "Документ проведён, а установленное расширение OneCMCP не умеет перепроводить его. "
+    "Обновите расширение до версии 1.3.0 или новее."
+)
+# Platform behaviour confirmed on 8.3.27: operative posting moves the time of today's document to "now".
+_OPERATIVE = (
+    " Если для вида документа разрешено оперативное проведение и документ датирован текущим днём, "
+    "1С проведёт его оперативно и, как при проведении из формы, установит время документа равным текущему."
+)
 _IDENTITY_FIELDS = ("Ref_Key", "Code", "Description", "Number", "Date", "Posted", "DeletionMark")
 _UNSET = object()
 _TTL = 300
@@ -51,7 +68,7 @@ def _matches_submitted(actual, expected) -> bool:
 
 
 async def _check_written(client, entry: _Pending, result: dict) -> dict:
-    expected = {"DeletionMark": True} if entry.method == "markDeletion" else entry.args["data"]
+    expected = _EXPECTED.get(entry.method) or entry.args["data"]
     key = entry.args.get("id") or result.get("id")
     if not key:
         return {"checked": False, "message": "Ответ 1С не содержит ключа для контрольного чтения."}
@@ -84,6 +101,50 @@ def _table_diff(before, after):
         "removedRows": list(range(len(after) + 1, len(before) + 1)),
         "changedRows": changed,
     }
+
+
+def _posting_effect(operation, posted, reposts):
+    """Describe what happens to register records. posted is None when the profile hides it."""
+    if operation == "delete":
+        if posted:
+            raise ValueError(
+                "Проведённый документ нельзя удалить физически. Сначала отмените проведение (unpost) "
+                "или пометьте его на удаление (mark)."
+            )
+        return "Непроведённый документ будет удалён. Проведённый документ 1С откажется удалять."
+    if operation == "unpost":
+        if posted is False:
+            raise ValueError("Документ не проведён. Отменять проведение не требуется.")
+        return "Проведение будет отменено, движения документа по регистрам удалятся."
+    if operation == "post":
+        if posted:
+            return "Документ уже проведён и будет перепроведён: движения регистров сформируются заново." + _OPERATIVE
+        return "Документ будет проведён. При отказе обработчиков проведения ничего не изменится." + _OPERATIVE
+    if posted and not reposts:
+        raise ValueError(_OLD_EXTENSION)
+    if posted is None and not reposts:
+        return (
+            "Если документ окажется проведён, установленное расширение отклонит операцию. "
+            "Обновите OneCMCP до 1.3.0."
+        )
+    if operation == "mark":
+        if posted:
+            return (
+                "Документ проведён. Проведение будет отменено, движения удалятся, "
+                "документ будет помечен на удаление."
+            )
+        if posted is None:
+            return "Если документ окажется проведён, 1С отменит проведение и удалит движения вместе с пометкой."
+        return "Документ не проведён. Движения не затрагиваются."
+    if posted:
+        return (
+            "Документ проведён. Изменение будет записано с перепроведением в одной транзакции: "
+            "движения регистров пересчитаются. Если 1С откажет в проведении, документ и движения не изменятся."
+            + _OPERATIVE
+        )
+    if posted is None:
+        return "Если документ окажется проведён, 1С перепроведёт его вместе с изменением." + _OPERATIVE
+    return "Документ не проведён. Изменение записывается без проведения."
 
 
 def _preview_size(plan: dict) -> int:
@@ -148,7 +209,8 @@ class ChangePlans:
             args["replaceTableSections"] = True
         if operation == "delete":
             args["confirmId"] = id
-        await client.validate_write(method, **args)
+        preview = await client.validate_write(method, **args)
+        reposts = isinstance(preview, dict) and preview.get("repostsPostedDocuments") is True
 
         field_limits = getattr(session, "field_limits", None)
         if has_fields and field_limits and any(isinstance(v, str) for v in data.values()):
@@ -167,31 +229,41 @@ class ChangePlans:
                             raise ValueError(
                                 f"Поле {name} допускает до {max_length} кодовых единиц UTF-16. Получено {units}."
                             )
+        document = collection.startswith("Document_")
+        posted = None
         if not create:
+            names = None
+            if operation != "update" or document:
+                schema = await client.describe(collection=collection)
+                names = {field["name"] for field in schema["fields"]}
             if operation == "update":
                 fields = list(data)
             else:
-                schema = await client.describe(collection=collection)
-                names = {field["name"] for field in schema["fields"]}
                 fields = [f for f in _IDENTITY_FIELDS if f in names]
-            current = await client.get(collection=collection, id=id, select=fields)
+            # Posted is read only where the profile shows it. Otherwise 1C decides under its lock.
+            select = fields + (["Posted"] if document and "Posted" in names and "Posted" not in fields else [])
+            current = await client.get(collection=collection, id=id, select=select)
             if current.get("etag") != version:
                 raise ValueError("Изменилась версия объекта. Перечитайте его через onec_get.")
             row = current["data"]
+            if document and isinstance(row.get("Posted"), bool):
+                posted = row["Posted"]
             if operation == "update" and any(f not in row for f in fields):
                 raise ValueError(
                     "База не вернула текущее значение одного из изменяемых полей. Предпросмотр невозможен."
                 )
             plan["before"] = {f: row[f] for f in fields if f in row}
+        if document and not create:
+            plan["posting"] = _posting_effect(operation, posted, reposts)
         if has_fields:
             plan["after"] = data
         elif operation == "mark":
             plan.update(
                 after={"DeletionMark": True},
-                effect=(
-                    "Изменится поле DeletionMark. Каскадная пометка и отмена проведения командой формы здесь не выполняются."
-                ),
+                effect="Изменится поле DeletionMark. Каскадная пометка подчинённых объектов не выполняется.",
             )
+        elif operation in ("post", "unpost"):
+            plan["after"] = {"Posted": operation == "post"}
         else:
             plan["effect"] = "Физическое удаление объекта в транзакции 1С."
         if replaceTableSections is True:
@@ -277,8 +349,14 @@ class ChangePlans:
             object_id = object_id or result.get("id")
         except (asyncio.CancelledError, Exception) as error:
             status = getattr(error, "status", None)
-            if isinstance(error, (PostedDocumentError, PostedDocumentGuardUnavailable)):
+            if isinstance(
+                error, (PostedDocumentError, PostedDocumentGuardUnavailable, PostingOperationsUnavailable)
+            ):
                 outcome, note = "rejected", str(error)
+            elif isinstance(error, ChangeRefusedError):
+                outcome, note = "rejected", str(error)
+                if error.messages and session.profile.get("writeMessages", True) is not False:
+                    note += " Сообщения 1С: " + " | ".join(error.messages)
             elif status in (409, 412):
                 outcome, note = "conflict", "Конфликт версии или блокировки объекта в 1С."
             elif dispatched:
@@ -314,6 +392,9 @@ class ChangePlans:
         }
         if object_id:
             output["id"] = object_id
+        for flag in ("posted", "reposted"):
+            if flag in result:
+                output["result"][flag] = result[flag]
         if entry.method != "remove":
             output["verification"] = await _check_written(client, entry, result)
         return output
