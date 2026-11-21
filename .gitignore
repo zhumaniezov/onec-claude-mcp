@@ -12,3 +12,4 @@ profiles.json
 *.sqlite3-journal
 *.sqlite3-wal
 *.sqlite3-shm
+.venv-release/
