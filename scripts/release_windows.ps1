@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     # Полный путь к 1cv8.exe. По умолчанию берётся самая новая установленная платформа 8.3.
     [string]$PlatformExe,

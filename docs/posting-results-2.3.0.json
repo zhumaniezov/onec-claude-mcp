@@ -1,0 +1,1609 @@
+{
+  "connector": "2.3.0 EXE",
+  "platform": "8.3.27.1644",
+  "extension_1_2_1": [
+    {
+      "scenario": "update posted, old extension, Posted visible",
+      "route": "mcp",
+      "outcome": "preview refused: Документ проведён, а установленное расширение OneCMCP не умеет перепроводить его. Обновите расширение до версии 1.3.0 или новее.",
+      "before": {
+        "id": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:16",
+        "number": "00000000064",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAaAAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:16",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:16",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      },
+      "after": {
+        "id": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:16",
+        "number": "00000000064",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAaAAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:16",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:16",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "update posted, old extension, Posted hidden",
+      "route": "mcp",
+      "outcome": "apply refused by 1.2.1 (422 posted_document)",
+      "before": {
+        "id": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:16",
+        "number": "00000000064",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAaAAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:16",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:16",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      },
+      "after": {
+        "id": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:16",
+        "number": "00000000064",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAaAAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:16",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:16",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      },
+      "preview": "Если документ окажется проведён, установленное расширение отклонит операцию. Обновите OneCMCP до 1.3.0.",
+      "message": "Операция 836dc0f4-d843-4fc5-9304-245d41d7edac: Расширение 1С запретило операцию с проведённым документом (HTTP 422). План закрыт."
+    },
+    {
+      "scenario": "post with old extension",
+      "route": "mcp",
+      "outcome": "preview refused: Для проведения и отмены проведения обновите расширение OneCMCP до версии 1.3.0 или новее.",
+      "before": {
+        "id": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:16",
+        "number": "00000000064",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAaAAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:16",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:16",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      },
+      "after": {
+        "id": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:16",
+        "number": "00000000064",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAaAAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:16",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:16",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "unpost with old extension",
+      "route": "mcp",
+      "outcome": "preview refused: Для проведения и отмены проведения обновите расширение OneCMCP до версии 1.3.0 или новее.",
+      "before": {
+        "id": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:16",
+        "number": "00000000064",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAaAAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:16",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:16",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      },
+      "after": {
+        "id": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:16",
+        "number": "00000000064",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAaAAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:16",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "905451d7-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:16",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      }
+    }
+  ],
+  "extension_1_3_0": [
+    {
+      "scenario": "update posted 10->20, today",
+      "route": "direct",
+      "outcome": "200 posted+reposted, records 8/12, operative; date 2026-11-21T21:21:47 -> 2026-11-21T21:21:54",
+      "before": {
+        "id": "9bd277f1-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:47",
+        "number": "00000000101",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAApQAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277f1-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:47",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd277f1-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:47",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      },
+      "after": {
+        "id": "9bd277f1-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:54",
+        "number": "00000000101",
+        "posted": true,
+        "mark": false,
+        "sum": 20,
+        "version": "AAAApgAAAAA=",
+        "count": 2,
+        "movement": 8,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277f1-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:54",
+            "line": 1,
+            "amount": 8,
+            "active": true,
+            "mode": "operative"
+          },
+          {
+            "recorder": "9bd277f1-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:54",
+            "line": 2,
+            "amount": 12,
+            "active": true,
+            "mode": "operative"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "update posted 10->20, today",
+      "route": "mcp",
+      "outcome": "200 posted+reposted, records 8/12, operative; date 2026-11-21T21:21:49 -> 2026-11-21T21:21:55",
+      "before": {
+        "id": "9bd277f2-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:49",
+        "number": "00000000102",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAApwAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277f2-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:49",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd277f2-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:49",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      },
+      "after": {
+        "id": "9bd277f2-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:55",
+        "number": "00000000102",
+        "posted": true,
+        "mark": false,
+        "sum": 20,
+        "version": "AAAAqAAAAAA=",
+        "count": 2,
+        "movement": 8,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277f2-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:55",
+            "line": 1,
+            "amount": 8,
+            "active": true,
+            "mode": "operative"
+          },
+          {
+            "recorder": "9bd277f2-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:55",
+            "line": 2,
+            "amount": 12,
+            "active": true,
+            "mode": "operative"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "update posted 10->20, date 3 days ago",
+      "route": "mcp",
+      "outcome": "reposted in regular (non-operative) mode, date unchanged",
+      "before": {
+        "id": "9bd277f3-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-18T10:00:00",
+        "number": "00000000103",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAqQAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277f3-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-18T10:00:00",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd277f3-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-18T10:01:00",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      },
+      "after": {
+        "id": "9bd277f3-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-18T10:00:00",
+        "number": "00000000103",
+        "posted": true,
+        "mark": false,
+        "sum": 20,
+        "version": "AAAAqgAAAAA=",
+        "count": 2,
+        "movement": 8,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277f3-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-18T10:00:00",
+            "line": 1,
+            "amount": 8,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd277f3-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-18T10:01:00",
+            "line": 2,
+            "amount": 12,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "update posted 10->1000 refused by posting handler",
+      "route": "direct",
+      "outcome": "422 posting_failed, messages=['Недостаточно остатка стенда: требуется 1000, доступно 100 (сообщение 1)', 'Недостаточно остатка стенда: требуется 1000, доступно 100 (сообщение 2)']",
+      "before": {
+        "id": "9bd277f4-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:51",
+        "number": "00000000104",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAqwAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277f4-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:51",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd277f4-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:51",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      },
+      "after": {
+        "id": "9bd277f4-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:51",
+        "number": "00000000104",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAqwAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277f4-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:51",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd277f4-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:51",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "update posted 10->1000 refused by posting handler",
+      "route": "mcp",
+      "outcome": "Операция 953bd4c2-bd7c-4ed8-aff9-a7eab8e074d9: 1С не провела документ. Изменение не сохранено, документ и движения остались прежними. (HTTP 422, posting_failed). Сообщения 1С: Недостаточно остатка стенда: требуется 1000, доступно 100 (сообщение 1) | Недостаточно остатка стенда: требуется 1000, доступно 100 (сообщение 2) План закрыт.",
+      "before": {
+        "id": "9bd277f5-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:51",
+        "number": "00000000105",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAArAAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277f5-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:51",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd277f5-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:51",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      },
+      "after": {
+        "id": "9bd277f5-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:51",
+        "number": "00000000105",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAArAAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277f5-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:51",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd277f5-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:51",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "update posted 10->5000 refused by posting handler",
+      "route": "mcp",
+      "outcome": "Операция f900c945-870e-43e7-9d62-28a29019b0f8: 1С не провела документ. Изменение не сохранено, документ и движения остались прежними. (HTTP 422, posting_failed). Сообщения 1С: Недостаточно остатка стенда: требуется 5000, доступно 100 (сообщение 1) | Недостаточно остатка стенда: требуется 5000, доступно 100 (сообщение 2) | Недостаточно остатка стенда: требуется 5000, доступно 100 (сообщение 3) | Недостаточно остатка стенда: требуется 5000, доступно 100 (сообщение 4) | Недостаточно остатка стенда: требуется 5000, доступно 100 (сообщение 5) | Недостаточно остатка стенда: требуется 5000, доступно 100 (сообщение 6) | Недостаточно остатка стенда: требуется 5000, доступно 100 (сообщение 7) | Недостаточно остатка стенда: требуется 5000, доступно 100 (сообщение 8) | Недостаточно остатка стенда: требуется 5000, доступно 100 (сообщение 9) | Недостаточно остатка стенда: требуется 5000, доступно 100 (сообщение 10) | Недостаточно остатка стенда: требуется 5000, доступно 100 (сообщение 11) | Недостаточно остатка стенда: требуется 5000, доступно 100 (сообщение 12) | Недостаточно остатка стенда: требуется 5000, доступно 100 (сообщение 13) | Недостаточно остатка стенда: требуется 5000, доступно 100 (сообщение 14) | Недостаточно остатка стенда: требуется 5000, доступно 100 (сообщение 15) | Недостаточно остатка стенда: требуется 5000, доступно 100 (сообщение 16) | Недостаточно остатка стенда: требуется 5000, доступно 100 (сообщение 17) | Недостаточно остатка стенда: требуется 5000, доступно 100 (сообщение 18) | Недостаточно остатка стенда: требуется 5000, доступно 100 (сообщение 19) | Недостаточно остатка стенда: требуется 5000, доступно 100 (сообщение 20) План закрыт.",
+      "before": {
+        "id": "9bd277f6-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:51",
+        "number": "00000000106",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAArQAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277f6-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:51",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd277f6-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:51",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      },
+      "after": {
+        "id": "9bd277f6-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:51",
+        "number": "00000000106",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAArQAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277f6-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:51",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd277f6-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:51",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "update posted 10->1000 refused by posting handler, writeMessages=false",
+      "route": "mcp",
+      "outcome": "Операция 1b2a2a7d-1a19-45e1-a84b-eb57c5374b86: 1С не провела документ. Изменение не сохранено, документ и движения остались прежними. (HTTP 422, posting_failed). План закрыт.",
+      "before": {
+        "id": "9bd277f7-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:52",
+        "number": "00000000107",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAArgAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277f7-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:52",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd277f7-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:52",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      },
+      "after": {
+        "id": "9bd277f7-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:52",
+        "number": "00000000107",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAArgAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277f7-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:52",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd277f7-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:52",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "mark posted",
+      "route": "direct",
+      "outcome": "deletion mark set, posted=false, no records",
+      "before": {
+        "id": "9bd277f8-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:52",
+        "number": "00000000108",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAArwAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277f8-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:52",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd277f8-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:52",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      },
+      "after": {
+        "id": "9bd277f8-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:52",
+        "number": "00000000108",
+        "posted": false,
+        "mark": true,
+        "sum": 10,
+        "version": "AAAAsAAAAAA=",
+        "count": 0,
+        "records": []
+      }
+    },
+    {
+      "scenario": "mark posted",
+      "route": "mcp",
+      "outcome": "deletion mark set, posted=false, no records",
+      "before": {
+        "id": "9bd277f9-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:52",
+        "number": "00000000109",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAsQAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277f9-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:52",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd277f9-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:52",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      },
+      "after": {
+        "id": "9bd277f9-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:52",
+        "number": "00000000109",
+        "posted": false,
+        "mark": true,
+        "sum": 10,
+        "version": "AAAAsgAAAAA=",
+        "count": 0,
+        "records": []
+      }
+    },
+    {
+      "scenario": "post (first)",
+      "route": "direct",
+      "outcome": "200 posted=True records=2",
+      "before": {
+        "id": "9bd277fa-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:52",
+        "number": "00000000110",
+        "posted": false,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAswAAAAA=",
+        "count": 0,
+        "records": []
+      },
+      "after": {
+        "id": "9bd277fa-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:22:00",
+        "number": "00000000110",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAtAAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277fa-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:00",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "operative"
+          },
+          {
+            "recorder": "9bd277fa-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:23:00",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "operative"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "post (repost)",
+      "route": "direct",
+      "outcome": "200 posted=True records=2",
+      "before": {
+        "id": "9bd277fa-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:22:00",
+        "number": "00000000110",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAtAAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277fa-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:00",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "operative"
+          },
+          {
+            "recorder": "9bd277fa-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:23:00",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "operative"
+          }
+        ]
+      },
+      "after": {
+        "id": "9bd277fa-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:22:01",
+        "number": "00000000110",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAtQAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277fa-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:01",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "operative"
+          },
+          {
+            "recorder": "9bd277fa-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:23:01",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "operative"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "unpost (first)",
+      "route": "direct",
+      "outcome": "200 posted=False records=0",
+      "before": {
+        "id": "9bd277fa-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:22:01",
+        "number": "00000000110",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAtQAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277fa-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:01",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "operative"
+          },
+          {
+            "recorder": "9bd277fa-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:23:01",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "operative"
+          }
+        ]
+      },
+      "after": {
+        "id": "9bd277fa-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:22:01",
+        "number": "00000000110",
+        "posted": false,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAtgAAAAA=",
+        "count": 0,
+        "records": []
+      }
+    },
+    {
+      "scenario": "unpost of unposted document",
+      "route": "direct",
+      "outcome": "422 not_posted",
+      "before": {
+        "id": "9bd277fa-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:22:01",
+        "number": "00000000110",
+        "posted": false,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAtgAAAAA=",
+        "count": 0,
+        "records": []
+      },
+      "after": {
+        "id": "9bd277fa-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:22:01",
+        "number": "00000000110",
+        "posted": false,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAtgAAAAA=",
+        "count": 0,
+        "records": []
+      }
+    },
+    {
+      "scenario": "post (first)",
+      "route": "mcp",
+      "outcome": "200 posted=True records=2",
+      "before": {
+        "id": "9bd277fb-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:52",
+        "number": "00000000111",
+        "posted": false,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAtwAAAAA=",
+        "count": 0,
+        "records": []
+      },
+      "after": {
+        "id": "9bd277fb-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:22:02",
+        "number": "00000000111",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAuAAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277fb-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:02",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "operative"
+          },
+          {
+            "recorder": "9bd277fb-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:23:02",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "operative"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "post (repost)",
+      "route": "mcp",
+      "outcome": "200 posted=True records=2",
+      "before": {
+        "id": "9bd277fb-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:22:02",
+        "number": "00000000111",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAuAAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277fb-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:02",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "operative"
+          },
+          {
+            "recorder": "9bd277fb-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:23:02",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "operative"
+          }
+        ]
+      },
+      "after": {
+        "id": "9bd277fb-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:22:03",
+        "number": "00000000111",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAuQAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277fb-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:03",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "operative"
+          },
+          {
+            "recorder": "9bd277fb-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:23:03",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "operative"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "unpost (first)",
+      "route": "mcp",
+      "outcome": "200 posted=False records=0",
+      "before": {
+        "id": "9bd277fb-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:22:03",
+        "number": "00000000111",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAuQAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277fb-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:03",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "operative"
+          },
+          {
+            "recorder": "9bd277fb-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:23:03",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "operative"
+          }
+        ]
+      },
+      "after": {
+        "id": "9bd277fb-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:22:03",
+        "number": "00000000111",
+        "posted": false,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAugAAAAA=",
+        "count": 0,
+        "records": []
+      }
+    },
+    {
+      "scenario": "unpost of unposted document",
+      "route": "mcp",
+      "outcome": "preview refused with Posted visible; 422 not_posted with Posted hidden",
+      "before": {
+        "id": "9bd277fb-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:22:03",
+        "number": "00000000111",
+        "posted": false,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAugAAAAA=",
+        "count": 0,
+        "records": []
+      },
+      "after": {
+        "id": "9bd277fb-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:22:03",
+        "number": "00000000111",
+        "posted": false,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAugAAAAA=",
+        "count": 0,
+        "records": []
+      }
+    },
+    {
+      "scenario": "delete posted",
+      "route": "direct",
+      "outcome": "422 posted_document",
+      "before": {
+        "id": "9bd277fc-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:53",
+        "number": "00000000112",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAuwAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277fc-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:53",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd277fc-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:53",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      },
+      "after": {
+        "id": "9bd277fc-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:53",
+        "number": "00000000112",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAuwAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277fc-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:53",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd277fc-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:53",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "delete posted",
+      "route": "mcp",
+      "outcome": "preview refused with Posted visible; 422 posted_document with Posted hidden",
+      "before": {
+        "id": "9bd277fd-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:53",
+        "number": "00000000113",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAvAAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277fd-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:53",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd277fd-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:53",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      },
+      "after": {
+        "id": "9bd277fd-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:53",
+        "number": "00000000113",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAvAAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277fd-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:53",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd277fd-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:53",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "update posted by stand_nopost (no Posting right)",
+      "route": "direct",
+      "outcome": "403 posting_forbidden",
+      "before": {
+        "id": "9bd277fe-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:53",
+        "number": "00000000114",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAvQAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277fe-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:53",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd277fe-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:53",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      },
+      "after": {
+        "id": "9bd277fe-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:53",
+        "number": "00000000114",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAvQAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277fe-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:53",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd277fe-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:53",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "update posted by stand_nopost (no Posting right)",
+      "route": "mcp",
+      "outcome": "Операция b431e185-d74e-485b-a82e-d82b23ebb856: У интеграционного пользователя нет права на проведение этого документа. (HTTP 403, posting_forbidden). План закрыт.",
+      "before": {
+        "id": "9bd277ff-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:53",
+        "number": "00000000115",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAvgAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277ff-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:53",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd277ff-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:53",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      },
+      "after": {
+        "id": "9bd277ff-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:53",
+        "number": "00000000115",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAvgAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd277ff-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:53",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd277ff-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:53",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "post posted by stand_nopost (no Posting right)",
+      "route": "direct",
+      "outcome": "403 posting_forbidden",
+      "before": {
+        "id": "9bd27800-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:53",
+        "number": "00000000116",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAvwAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd27800-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:53",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd27800-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:53",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      },
+      "after": {
+        "id": "9bd27800-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:53",
+        "number": "00000000116",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAvwAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd27800-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:53",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd27800-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:53",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "mark posted by stand_nopost (no Posting right)",
+      "route": "direct",
+      "outcome": "403 unposting_forbidden",
+      "before": {
+        "id": "9bd27801-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:53",
+        "number": "00000000117",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAwAAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd27801-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:53",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd27801-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:53",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      },
+      "after": {
+        "id": "9bd27801-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:53",
+        "number": "00000000117",
+        "posted": true,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAwAAAAAA=",
+        "count": 2,
+        "movement": 4,
+        "active": true,
+        "records": [
+          {
+            "recorder": "9bd27801-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:21:53",
+            "line": 1,
+            "amount": 4,
+            "active": true,
+            "mode": "regular"
+          },
+          {
+            "recorder": "9bd27801-e5c7-11f1-8aaa-04f0ee43ed0a",
+            "period": "2026-11-21T21:22:53",
+            "line": 2,
+            "amount": 6,
+            "active": true,
+            "mode": "regular"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "update draft",
+      "route": "direct",
+      "outcome": "200 posted=false, no records",
+      "before": {
+        "id": "9bd27802-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:53",
+        "number": "00000000118",
+        "posted": false,
+        "mark": false,
+        "sum": 10,
+        "version": "AAAAwQAAAAA=",
+        "count": 0,
+        "records": []
+      },
+      "after": {
+        "id": "9bd27802-e5c7-11f1-8aaa-04f0ee43ed0a",
+        "date": "2026-11-21T21:21:53",
+        "number": "00000000118",
+        "posted": false,
+        "mark": false,
+        "sum": 20,
+        "version": "AAAAwgAAAAA=",
+        "count": 0,
+        "records": []
+      }
+    },
+    {
+      "scenario": "post document with Posting=Deny",
+      "route": "direct",
+      "outcome": "422 posting_not_allowed",
+      "before": null,
+      "after": null
+    }
+  ]
+}

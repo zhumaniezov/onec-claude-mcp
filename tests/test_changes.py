@@ -392,6 +392,7 @@ class PostedDocumentTests(unittest.IsolatedAsyncioTestCase):
         self.use(posted=True)
         plan = await self.prepare()
         self.assertIn("перепроведением", plan["posting"])
+        self.assertIn("время документа равным текущему", plan["posting"])
         self.assertEqual(plan["before"], {"Description": "Старое"})
         self.assertIn("Posted", self.client.reads[-1])
         result = await self.apply(plan)
@@ -403,6 +404,7 @@ class PostedDocumentTests(unittest.IsolatedAsyncioTestCase):
         self.use(posted=False)
         plan = await self.prepare()
         self.assertIn("без проведения", plan["posting"])
+        self.assertNotIn("оперативно", plan["posting"])
 
     async def test_hidden_posting_state_gets_a_conditional_note(self):
         self.use(posted=True)
@@ -434,6 +436,7 @@ class PostedDocumentTests(unittest.IsolatedAsyncioTestCase):
             await self.prepare(operation="unpost", data=None)
         plan = await self.prepare(operation="post", data=None)
         self.assertEqual((plan["before"]["Posted"], plan["after"]), (False, {"Posted": True}))
+        self.assertIn("время документа равным текущему", plan["posting"])
         result = await self.apply(plan)
         self.assertEqual(self.client.writes[-1][0], "post")
         self.assertEqual(result["result"]["posted"], True)
