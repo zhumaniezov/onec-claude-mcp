@@ -15,6 +15,7 @@ _ENV_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 _DEFAULTS = {
     "allowLoopbackHttp": False,
     "physicalDelete": False,
+    "writeMessages": True,
     "timeoutMs": 20000,
     "maxResponseMiB": 32,
 }
@@ -117,7 +118,7 @@ def parse_profiles(raw) -> dict[str, dict]:
         for field in env_fields:
             if not isinstance(fields[field], str) or not _ENV_NAME.fullmatch(fields[field]):
                 raise _bad_field(path + "." + field)
-        for field in ("allowLoopbackHttp", "physicalDelete"):
+        for field in ("allowLoopbackHttp", "physicalDelete", "writeMessages"):
             if not isinstance(profile[field], bool):
                 raise _bad_field(path + "." + field)
         for field, low, high in (

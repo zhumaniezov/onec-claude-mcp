@@ -1,5 +1,6 @@
 import asyncio
 import copy
+import json
 import sqlite3
 import tempfile
 import unittest
@@ -10,7 +11,7 @@ from unittest.mock import patch
 from onec_mcp.audit import AuditError, AuditLog
 from onec_mcp.changes import ChangePlans
 from onec_mcp.odata import PostedDocumentGuardUnavailable
-from onec_mcp.transport import PostedDocumentError, TransportError
+from onec_mcp.transport import ChangeRefusedError, PostedDocumentError, TransportError
 
 ID = "aaaaaaaa-1111-4111-8111-111111111111"
 COLLECTION = "Catalog_Demo"
@@ -335,3 +336,126 @@ class ChangeTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(asyncio.CancelledError):
             await self.apply(plan)
         self.assertEqual(self.journal()[0]["outcome"], "unknown")
+
+
+DOCUMENT = "Document_Заказ"
+
+
+class DocumentClient(Client):
+    """A document whose posting state, extension capability and posting outcome can be scripted."""
+
+    def __init__(self, posted, reposts=True):
+        super().__init__()
+        self.row.update(Posted=posted, Number="0001")
+        self.reposts = reposts
+
+    async def validate_write(self, method, **args):
+        return {"repostsPostedDocuments": self.reposts}
+
+    async def update(self, **args):
+        result = await super().update(**args)
+        return {**result, "posted": self.row["Posted"], "reposted": self.row["Posted"]}
+
+    async def post(self, **args):
+        self.writes.append(("post", args))
+        self.row["Posted"] = True
+        return {"status": 200, "posted": True, "reposted": False}
+
+    async def unpost(self, **args):
+        self.writes.append(("unpost", args))
+        self.row["Posted"] = False
+        return {"status": 200, "posted": False, "reposted": False}
+
+
+class PostedDocumentTests(unittest.IsolatedAsyncioTestCase):
+    def use(self, posted, reposts=True, **profile):
+        self.client = DocumentClient(posted, reposts)
+        self.profile = {"writeCollections": [DOCUMENT], "physicalDelete": True, **profile}
+        self.session = SimpleNamespace(
+            profile=self.profile, client=self.client, field_limits=None, audit_user="integration"
+        )
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.audit_path = Path(directory.name) / "audit.sqlite3"
+        self.plans = ChangePlans(lambda base: self.session, AuditLog(self.audit_path))
+
+    journal = ChangeTests.journal
+
+    async def prepare(self, **kwargs):
+        request = copy.deepcopy(REQUEST) | {"collection": DOCUMENT, "data": {"Description": "20"}} | kwargs
+        return await self.plans.prepare(**{k: v for k, v in request.items() if v is not None})
+
+    async def apply(self, plan):
+        return await self.plans.apply(base="demo", ticket=plan["ticket"])
+
+    async def test_update_of_posted_document_is_previewed_and_applied_as_reposting(self):
+        self.use(posted=True)
+        plan = await self.prepare()
+        self.assertIn("перепроведением", plan["posting"])
+        self.assertEqual(plan["before"], {"Description": "Старое"})
+        self.assertIn("Posted", self.client.reads[-1])
+        result = await self.apply(plan)
+        self.assertEqual(result["result"]["posted"], True)
+        self.assertEqual(result["result"]["reposted"], True)
+        self.assertEqual(result["verification"], {"checked": True, "differences": []})
+
+    async def test_unposted_document_is_written_without_posting(self):
+        self.use(posted=False)
+        plan = await self.prepare()
+        self.assertIn("без проведения", plan["posting"])
+
+    async def test_hidden_posting_state_gets_a_conditional_note(self):
+        self.use(posted=True)
+        del self.client.row["Posted"]
+        plan = await self.prepare()
+        self.assertIn("Если документ окажется проведён", plan["posting"])
+
+    async def test_old_extension_stops_posted_document_change_in_preview(self):
+        self.use(posted=True, reposts=False)
+        for operation, extra in (("update", {}), ("mark", {"data": None})):
+            with self.assertRaisesRegex(ValueError, "1.3.0"):
+                await self.prepare(operation=operation, **extra)
+        self.assertEqual(self.client.writes, [])
+
+    async def test_posted_document_cannot_be_physically_deleted(self):
+        self.use(posted=True)
+        with self.assertRaisesRegex(ValueError, "нельзя удалить физически"):
+            await self.prepare(operation="delete", data=None)
+
+    async def test_mark_of_posted_document_announces_unposting(self):
+        self.use(posted=True)
+        plan = await self.prepare(operation="mark", data=None)
+        self.assertIn("Проведение будет отменено", plan["posting"])
+        self.assertEqual(plan["after"], {"DeletionMark": True})
+
+    async def test_post_and_unpost_are_single_use_plans_with_verification(self):
+        self.use(posted=False)
+        with self.assertRaisesRegex(ValueError, "не проведён"):
+            await self.prepare(operation="unpost", data=None)
+        plan = await self.prepare(operation="post", data=None)
+        self.assertEqual((plan["before"]["Posted"], plan["after"]), (False, {"Posted": True}))
+        result = await self.apply(plan)
+        self.assertEqual(self.client.writes[-1][0], "post")
+        self.assertEqual(result["result"]["posted"], True)
+        self.assertEqual(result["verification"], {"checked": True, "differences": []})
+        plan = await self.prepare(operation="unpost", data=None, version=self.client.row["DataVersion"])
+        self.assertIn("движения документа по регистрам удалятся", plan["posting"])
+        result = await self.apply(plan)
+        self.assertEqual(result["verification"], {"checked": True, "differences": []})
+        self.assertEqual([r["outcome"] for r in self.journal()], ["committed", "committed"])
+
+    async def test_posting_refusal_returns_1c_messages_and_is_audited(self):
+        for show, expected in ((True, True), (False, False)):
+            self.use(posted=True, writeMessages=show)
+
+            async def refuse(**args):
+                raise ChangeRefusedError("posting_failed", 422, ["Недостаточно товара Шина R16: 2 из 4"])
+
+            self.client.update = refuse
+            plan = await self.prepare()
+            with self.assertRaisesRegex(ValueError, "не провела документ") as caught:
+                await self.apply(plan)
+            self.assertEqual("Недостаточно товара" in str(caught.exception), expected)
+            row = self.journal()[0]
+            self.assertEqual((row["outcome"], row["http_status"]), ("rejected", 422))
+            self.assertNotIn("Недостаточно", json.dumps(row, ensure_ascii=False))

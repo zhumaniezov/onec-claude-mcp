@@ -29,6 +29,42 @@ class PostedDocumentError(TransportError):
         super().__init__("Расширение 1С запретило операцию с проведённым документом (HTTP 422).", 422)
 
 
+_MAX_MESSAGES = 20
+_MAX_MESSAGE_LENGTH = 1000
+_CHANGE_REFUSALS = {
+    "write_rejected": "1С отклонила запись объекта.",
+    "posting_failed": "1С не провела документ. Изменение не сохранено, документ и движения остались прежними.",
+    "unposting_failed": "1С не отменила проведение документа. Изменение не сохранено.",
+    "not_posted": "Документ не проведён. Отменять проведение не требуется.",
+    "posting_not_allowed": "Документы этого вида не проводятся.",
+    "posting_forbidden": "У интеграционного пользователя нет права на проведение этого документа.",
+    "unposting_forbidden": "У интеграционного пользователя нет права на отмену проведения этого документа.",
+}
+
+
+def _user_messages(value):
+    """Keep only short printable texts that the configuration addressed to a user."""
+    if not isinstance(value, list):
+        return []
+    messages = []
+    for item in value[:_MAX_MESSAGES]:
+        if isinstance(item, str):
+            text = "".join(ch if ch in "\n\t" or (ord(ch) >= 32 and ord(ch) != 127) else " " for ch in item)
+            text = text.strip()[:_MAX_MESSAGE_LENGTH]
+            if text:
+                messages.append(text)
+    return messages
+
+
+class ChangeRefusedError(TransportError):
+    """A recognised refusal of the extension's /change method. Nothing was committed."""
+
+    def __init__(self, code, status, messages=()):
+        self.code = code
+        self.messages = list(messages)
+        super().__init__(f"{_CHANGE_REFUSALS[code]} (HTTP {status}, {code}).", status)
+
+
 def _read_integer(literal):
     if len(literal.lstrip("-")) > 16:
         return literal
@@ -208,13 +244,16 @@ class Transport:
                     ) as response:
                         status = response.status_code
                         if not 200 <= status <= 299:
-                            if status == 422 and method == "POST" and path == "change":
+                            if status in (403, 422) and method == "POST" and path == "change":
                                 try:
-                                    error = json.loads(await _read_bytes(response, 1024, ""))
+                                    error = json.loads(await _read_bytes(response, 64 * 1024, ""))
                                 except (ValueError, RecursionError, TransportError):
                                     error = None
-                                if isinstance(error, dict) and error.get("error") == "posted_document":
+                                code = error.get("error") if isinstance(error, dict) else None
+                                if status == 422 and code == "posted_document":
                                     raise PostedDocumentError()
+                                if isinstance(code, str) and code in _CHANGE_REFUSALS:
+                                    raise ChangeRefusedError(code, status, _user_messages(error.get("messages")))
                             detail = {
                                 401: "Проверьте авторизацию.",
                                 403: "Недостаточно прав.",

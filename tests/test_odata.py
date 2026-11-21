@@ -8,7 +8,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
 
 from onec_mcp.odata import ODataClient
-from onec_mcp.transport import PostedDocumentError, Transport, TransportError
+from onec_mcp.transport import ChangeRefusedError, PostedDocumentError, Transport, TransportError
 
 CAT = "Catalog_Товары"
 REG = "InformationRegister_Цены"
@@ -120,6 +120,56 @@ class TestOData(unittest.IsolatedAsyncioTestCase):
             self.assertNotIsInstance(generic.exception, PostedDocumentError)
             self.assertEqual(generic.exception.status, 422)
             self.assertNotIn("secret-sentinel", str(generic.exception))
+
+    async def test_posting_refusal_carries_only_sanitised_user_messages(self):
+        messages = ["Недостаточно товара\x07 Шина R16", 7, "x" * 5000, "   "] + ["m"] * 30
+        self.reply = 422, json.dumps(
+            {"error": "posting_failed", "messages": messages, "stack": "secret-sentinel"}
+        ).encode(), {}
+        with self.assertRaises(ChangeRefusedError) as refused:
+            await self.extension.request("change", method="POST", body={})
+        error = refused.exception
+        self.assertEqual((error.code, error.status), ("posting_failed", 422))
+        self.assertEqual(error.messages[0], "Недостаточно товара  Шина R16")
+        self.assertEqual(len(error.messages[1]), 1000)
+        self.assertLessEqual(len(error.messages), 20)
+        self.assertNotIn("secret-sentinel", str(error) + "".join(error.messages))
+        self.reply = 403, b'{"error":"posting_forbidden"}', {}
+        with self.assertRaisesRegex(ChangeRefusedError, "права на проведение"):
+            await self.extension.request("change", method="POST", body={})
+        self.reply = 403, b'{"error":"forbidden"}', {}
+        with self.assertRaises(TransportError) as generic:
+            await self.extension.request("change", method="POST", body={})
+        self.assertNotIsInstance(generic.exception, ChangeRefusedError)
+
+    async def test_post_and_unpost_require_documents_and_a_capable_extension(self):
+        document = "Document_Заказ"
+        self.xml = XML.replace(CAT, document)
+        self.profile["writeCollections"] = [CAT, document]
+        args = {"collection": document, "id": ID, "etag": VERSION}
+        self.capabilities = 200, json.dumps({
+            "protocolVersion": 1, "dataTransport": "odata-v3", "atomicWrites": True,
+            "protectsPostedDocuments": True,
+        }).encode(), {}
+        with self.assertRaisesRegex(ValueError, "1.3.0"):
+            await self.client.post(**args)
+        self.capabilities = 200, json.dumps({
+            "protocolVersion": 1, "dataTransport": "odata-v3", "atomicWrites": True,
+            "protectsPostedDocuments": True, "repostsPostedDocuments": True, "postingOperations": True,
+        }).encode(), {}
+        with self.assertRaisesRegex(ValueError, "только для документов"):
+            await self.client.validate_write("post", collection=CAT, id=ID, etag=VERSION)
+        preview = await self.client.validate_write("post", **args)
+        self.assertTrue(preview["repostsPostedDocuments"])
+        self.reply = 200, json.dumps({"id": ID, "version": VERSION, "posted": True, "reposted": False}).encode(), {}
+        result = await self.client.post(**args)
+        self.assertEqual(json.loads(self.calls[-1][4]), {"operation": "post", **{
+            "collection": document, "id": ID, "version": VERSION}})
+        self.assertEqual((result["posted"], result["reposted"]), (True, False))
+        self.reply = 200, json.dumps({"id": ID, "version": VERSION, "posted": True}).encode(), {}
+        with self.assertRaisesRegex(TransportError, "неполный ответ"):
+            await self.client.unpost(**args)
+        self.assertEqual(json.loads(self.calls[-1][4])["operation"], "unpost")
 
     async def test_metadata_across_types_is_cached_and_finds_fields_in_row_types(self):
         catalog, register = await asyncio.gather(
